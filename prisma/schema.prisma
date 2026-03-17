@@ -1,0 +1,111 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+// ─── MODELS ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String    @id @default(cuid())
+  /// Código único de identificação do funcionário (ex: "001", "FUN-023")
+  code      String    @unique
+  /// Username para login
+  username  String    @unique
+  name      String
+  password  String    // bcrypt hash
+  role      Role      @default(EMPLOYEE)
+  active    Boolean   @default(true)
+
+  entries   Entry[]
+  sessions  Session[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([username])
+  @@index([code])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Product {
+  /// Produto = Serviço. A mesma entidade serve para ambos os conceitos.
+  id        String   @id @default(cuid())
+  /// Código único do produto (ex: "001", "IMP-PB", "PLAST-A4")
+  code      String   @unique
+  name      String
+  /// Preço unitário base. Pode ser sobrescrito no lançamento.
+  price     Decimal  @db.Decimal(10, 2)
+  /// Quantidade atual em estoque. Nunca pode ser negativo.
+  stock     Int      @default(0)
+  active    Boolean  @default(true)
+
+  entries   Entry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+}
+
+model Entry {
+  id        String   @id @default(cuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+
+  /// Nome do produto no momento do lançamento (imutável para histórico)
+  productName  String
+  /// Preço unitário aplicado no lançamento (pode diferir do base)
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  /// Quantidade lançada
+  qty          Int
+  /// Total = qty * unitPrice (calculado e salvo na API)
+  total        Decimal  @db.Decimal(10, 2)
+
+  /// Nota opcional do funcionário
+  note         String?
+
+  /// Flag se o preço foi editado manualmente
+  priceEdited  Boolean  @default(false)
+
+  /// Data do lançamento (sem hora, para filtros de "hoje" e mensais)
+  date         DateTime @default(now())
+
+  /// Auditoria de edição
+  editedAt     DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productId])
+  @@index([date])
+  @@index([userId, date])
+}
