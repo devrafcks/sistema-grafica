@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   FileText, 
   Calendar as CalendarIcon, 
@@ -57,6 +57,26 @@ export default function ReportsPage() {
   })
   const [selectedUser, setSelectedUser] = useState<string>('all')
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
+
+  const employeesById = useMemo(() => {
+    return new Map(employees.map((employee) => [employee.id, employee]))
+  }, [employees])
+
+  const entriesByUserId = useMemo(() => {
+    const groupedEntries = new Map<string, any[]>()
+
+    for (const entry of reportData?.entries || []) {
+      const userEntries = groupedEntries.get(entry.userId)
+
+      if (userEntries) {
+        userEntries.push(entry)
+      } else {
+        groupedEntries.set(entry.userId, [entry])
+      }
+    }
+
+    return groupedEntries
+  }, [reportData])
 
   const fetchData = useCallback(async () => {
     setIsFiltering(true)
@@ -178,7 +198,7 @@ export default function ReportsPage() {
                   <SelectValue>
                     {selectedUser === 'all' 
                       ? 'Todos os funcionários' 
-                      : employees.find(e => e.id === selectedUser)?.name || 'Todos os funcionários'}
+                      : employeesById.get(selectedUser)?.name || 'Todos os funcionários'}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-none shadow-xl">
@@ -273,7 +293,7 @@ export default function ReportsPage() {
                 ) : (
                   reportData?.employeePerformance.map((e: any) => {
                     const isExpanded = expandedUser === e.id
-                    const userEntries = reportData.entries.filter((entry: any) => entry.userId === e.id)
+                    const userEntries = entriesByUserId.get(e.id) || []
                     
                     return (
                       <React.Fragment key={e.id}>

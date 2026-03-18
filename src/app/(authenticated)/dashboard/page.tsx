@@ -28,8 +28,10 @@ export default async function EmployeeDashboardPage() {
     redirect('/login')
   }
 
-  const stats = await getDashboardStats()
-  const recentEntries = await getRecentEntries(10)
+  const [stats, recentEntries] = await Promise.all([
+    getDashboardStats(),
+    getRecentEntries(10),
+  ])
 
   const dashboardCards = [
     { 

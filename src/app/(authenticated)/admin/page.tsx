@@ -20,14 +20,13 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default async function AdminDashboardPage() {
-  const employees = await getEmployees()
-
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
   const [
+    employees,
     revenueToday,
     revenueMonth,
     activeEmployees,
@@ -35,6 +34,7 @@ export default async function AdminDashboardPage() {
     entriesMonth,
     groupedEmployeeStats,
   ] = await Promise.all([
+    getEmployees(),
     prisma.entry.aggregate({
       where: { date: { gte: today } },
       _sum: { total: true }

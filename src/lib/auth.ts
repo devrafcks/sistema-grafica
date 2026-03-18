@@ -1,5 +1,6 @@
 import * as jose from 'jose'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 
 const jwtSecret = process.env.JWT_SECRET
@@ -12,7 +13,7 @@ export interface UserSession {
   name?: string
 }
 
-export async function verifySession(token: string): Promise<UserSession | null> {
+export const verifySession = cache(async (token: string): Promise<UserSession | null> => {
   if (!secret) return null
 
   try {
@@ -46,13 +47,13 @@ export async function verifySession(token: string): Promise<UserSession | null> 
   } catch {
     return null
   }
-}
+})
 
-export async function getSession(): Promise<UserSession | null> {
+export const getSession = cache(async (): Promise<UserSession | null> => {
   const cookieStore = await cookies()
   const token = cookieStore.get('session')?.value
 
   if (!token) return null
 
   return verifySession(token)
-}
+})
