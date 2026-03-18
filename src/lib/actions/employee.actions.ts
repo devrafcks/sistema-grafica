@@ -4,16 +4,36 @@ import { revalidatePath } from 'next/cache'
 import * as bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { z } from 'zod'
 
-export async function createEmployee(data: any) {
+const employeeIdSchema = z.string().min(1)
+const createEmployeeSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  code: z.string().trim().min(1).max(40),
+  username: z.string().trim().min(3).max(50),
+  password: z.string().min(6).max(120),
+  role: z.enum(['ADMIN', 'EMPLOYEE']).optional(),
+})
+const updateEmployeeSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  code: z.string().trim().min(1).max(40),
+  username: z.string().trim().min(3).max(50),
+  password: z.string().min(6).max(120).optional(),
+  role: z.enum(['ADMIN', 'EMPLOYEE']).optional(),
+})
+
+export async function createEmployee(data: { name: string; code: string; username: string; password: string; role?: 'ADMIN' | 'EMPLOYEE' }) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+    throw new Error('Nao autorizado')
   }
 
-  const { name, code, username, password, role } = data
+  const parsed = createEmployeeSchema.safeParse(data)
+  if (!parsed.success) {
+    return { success: false, error: 'Dados invalidos do funcionario.' }
+  }
 
-  // Hash password
+  const { name, code, username, password, role } = parsed.data
   const hashedPassword = await bcrypt.hash(password, 12)
 
   try {
@@ -27,37 +47,52 @@ export async function createEmployee(data: any) {
         active: true,
       },
     })
+
     revalidatePath('/admin/employees')
-    return JSON.parse(JSON.stringify({ success: true, employee }))
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      return { success: false, error: 'Usuário ou código já cadastrado.' }
+    return { success: true, employee }
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
+      return { success: false, error: 'Usuario ou codigo ja cadastrado.' }
     }
-    return { success: false, error: 'Erro ao criar funcionário.' }
+
+    return { success: false, error: 'Erro ao criar funcionario.' }
   }
 }
 
 export async function getEmployees() {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+    throw new Error('Nao autorizado')
   }
 
-  const employees = await prisma.user.findMany({
+  return prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      username: true,
+      role: true,
+      active: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     orderBy: { createdAt: 'desc' },
   })
-
-  return JSON.parse(JSON.stringify(employees))
 }
 
 export async function toggleEmployeeStatus(id: string, active: boolean) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+    throw new Error('Nao autorizado')
+  }
+
+  const parsedId = employeeIdSchema.safeParse(id)
+  if (!parsedId.success) {
+    throw new Error('Identificador invalido')
   }
 
   await prisma.user.update({
-    where: { id },
+    where: { id: parsedId.data },
     data: { active },
   })
 
@@ -66,15 +101,29 @@ export async function toggleEmployeeStatus(id: string, active: boolean) {
   return { success: true }
 }
 
-export async function updateEmployee(id: string, data: any) {
+export async function updateEmployee(
+  id: string,
+  data: { name: string; code: string; username: string; password?: string; role?: 'ADMIN' | 'EMPLOYEE' }
+) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+    throw new Error('Nao autorizado')
   }
 
-  const { name, code, username, password, role } = data
-  
-  const updateData: any = {
+  const parsedId = employeeIdSchema.safeParse(id)
+  const parsedData = updateEmployeeSchema.safeParse(data)
+  if (!parsedId.success || !parsedData.success) {
+    return { success: false, error: 'Dados invalidos para atualizar o funcionario.' }
+  }
+
+  const { name, code, username, password, role } = parsedData.data
+  const updateData: {
+    name: string
+    code: string
+    username: string
+    role?: 'ADMIN' | 'EMPLOYEE'
+    password?: string
+  } = {
     name,
     code,
     username,
@@ -87,38 +136,45 @@ export async function updateEmployee(id: string, data: any) {
 
   try {
     await prisma.user.update({
-      where: { id },
+      where: { id: parsedId.data },
       data: updateData,
     })
+
     revalidatePath('/admin/employees')
     return { success: true }
-  } catch (error: any) {
-    return { success: false, error: 'Erro ao atualizar funcionário.' }
+  } catch {
+    return { success: false, error: 'Erro ao atualizar funcionario.' }
   }
 }
+
 export async function deleteEmployee(id: string) {
   const session = await getSession()
-  if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+  if (!session) {
+    throw new Error('Nao autorizado')
+  }
+
+  const parsedId = employeeIdSchema.safeParse(id)
+  if (!parsedId.success) {
+    return { success: false, error: 'Identificador de funcionario invalido.' }
   }
 
   try {
-    // Check if there are entries before deleting
-    const entriesCount = await prisma.entry.count({
-      where: { userId: id }
-    })
+    await prisma.$transaction([
+      prisma.entry.deleteMany({
+        where: { userId: parsedId.data },
+      }),
+      prisma.session.deleteMany({
+        where: { userId: parsedId.data },
+      }),
+      prisma.user.delete({
+        where: { id: parsedId.data },
+      }),
+    ])
 
-    if (entriesCount > 0) {
-      return { success: false, error: 'Não é possível excluir um funcionário que possui lançamentos vinculados. Desative-o em vez disso.' }
-    }
-
-    await prisma.user.delete({
-      where: { id },
-    })
     revalidatePath('/admin/employees')
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { success: false, error: 'Erro ao excluir funcionário.' }
+  } catch {
+    return { success: false, error: 'Erro ao excluir funcionario.' }
   }
 }

@@ -1,28 +1,27 @@
-import { prisma } from '@/lib/prisma'
+﻿import { prisma } from '@/lib/prisma'
 import { getEmployees } from '@/lib/actions/employee.actions'
-import { 
-  TrendingUp, 
-  Package, 
+import {
+  TrendingUp,
+  Package,
   DollarSign,
   ArrowUpRight,
   UserCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default async function AdminDashboardPage() {
   const employees = await getEmployees()
-  
-  // Buscar métricas reais do banco
+
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -33,82 +32,86 @@ export default async function AdminDashboardPage() {
     revenueMonth,
     activeEmployees,
     totalProducts,
-    entriesMonth
+    entriesMonth,
+    groupedEmployeeStats,
   ] = await Promise.all([
-    // Receita hoje
     prisma.entry.aggregate({
       where: { date: { gte: today } },
       _sum: { total: true }
     }),
-    // Receita mês
     prisma.entry.aggregate({
       where: { date: { gte: firstDayOfMonth } },
       _sum: { total: true }
     }),
-    // Funcionários ativos
     prisma.user.count({
       where: { active: true, role: 'EMPLOYEE' }
     }),
-    // Total de itens em estoque (soma das quantidades)
     prisma.product.aggregate({
       _sum: { stock: true }
     }),
-    // Lançamentos no mês
     prisma.entry.count({
       where: { date: { gte: firstDayOfMonth } }
+    }),
+    prisma.entry.groupBy({
+      by: ['userId'],
+      where: {
+        date: { gte: firstDayOfMonth }
+      },
+      _count: { id: true },
+      _sum: { total: true }
     })
   ])
 
-  // Buscar dados consolidados por funcionário para a tabela
-  const employeeStats = await Promise.all(
-    employees
-      .filter((e: any) => e.role === 'EMPLOYEE')
-      .map(async (employee: any) => {
-        const stats = await prisma.entry.aggregate({
-          where: { 
-            userId: employee.id,
-            date: { gte: firstDayOfMonth }
-          },
-          _count: { id: true },
-          _sum: { total: true }
-        })
-
-        return {
-          ...employee,
-          monthlyCount: stats._count.id || 0,
-          monthlyTotal: Number(stats._sum.total || 0)
-        }
-      })
+  const employeeStatsMap = new Map(
+    groupedEmployeeStats.map((stat) => [
+      stat.userId,
+      {
+        monthlyCount: stat._count.id || 0,
+        monthlyTotal: Number(stat._sum.total || 0)
+      }
+    ])
   )
 
+  const employeeStats = employees
+    .filter((employee: any) => employee.role === 'EMPLOYEE')
+    .map((employee: any) => {
+      const stats = employeeStatsMap.get(employee.id)
+
+      return {
+        ...employee,
+        monthlyCount: stats?.monthlyCount || 0,
+        monthlyTotal: stats?.monthlyTotal || 0
+      }
+    })
+
   const stats = [
-    { 
-      label: 'Receita Hoje', 
-      value: `R$ ${Number(revenueToday._sum.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 
-      icon: DollarSign, 
-      trend: `Mês: R$ ${Number(revenueMonth._sum.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 
-      color: 'bg-green-500' 
+    {
+      label: 'Receita Hoje',
+      value: `R$ ${Number(revenueToday._sum.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: DollarSign,
+      trend: `Mês: R$ ${Number(revenueMonth._sum.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      color: 'bg-green-500'
     },
-    { 
-      label: 'Equipe Ativa', 
-      value: activeEmployees.toString(), 
-      icon: UserCheck, 
-      trend: 'Funcionários', 
-      color: 'bg-blue-500' 
+    {
+      label: 'Equipe Ativa',
+      value: activeEmployees.toString(),
+      icon: UserCheck,
+      trend: 'Funcionários',
+      color: 'bg-blue-500'
     },
-    { 
-      label: 'Itens em Estoque', 
-      value: (totalProducts._sum.stock || 0).toLocaleString('pt-BR'), 
-      icon: Package, 
-      trend: 'Total global', 
-      color: 'bg-amber-500' 
+    {
+      label: 'Itens em Estoque',
+      value: (totalProducts._sum.stock || 0).toLocaleString('pt-BR'),
+      icon: Package,
+      trend: 'Total global',
+      color: 'bg-amber-500'
     },
-    { 
-      label: 'Lançamentos / Mês', 
-      value: entriesMonth.toString(), 
-      icon: TrendingUp, 
-      trend: 'Este mês', 
-      color: 'bg-purple-500' 
+    {
+      label: 'Lançamentos / Mês',
+      value: entriesMonth.toString(),
+      icon: TrendingUp,
+      trend: 'Este mês',
+      color: 'bg-purple-500'
     },
   ]
 
@@ -119,12 +122,11 @@ export default async function AdminDashboardPage() {
         <p className="text-slate-500 dark:text-zinc-400 text-lg">Resumo operacional e financeiro do sistema.</p>
       </div>
 
-      {/* Cards de Estatísticas */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
           <div key={i} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
             <div className="flex items-center justify-between mb-4">
-              <div className={cn("p-2.5 rounded-xl text-white shadow-lg", stat.color)}>
+              <div className={cn('p-2.5 rounded-xl text-white shadow-lg', stat.color)}>
                 <stat.icon className="h-5 w-5" />
               </div>
               <span className="text-xs font-bold px-2 py-1 rounded-lg bg-slate-50 text-slate-500 dark:bg-zinc-900 dark:text-zinc-400">
@@ -139,7 +141,6 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      {/* Tabela de Resumo por Funcionário */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Resumo por Funcionário</h2>
@@ -186,3 +187,4 @@ export default async function AdminDashboardPage() {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { cookies } from 'next/headers'
 import * as bcrypt from 'bcryptjs'
@@ -6,14 +6,16 @@ import * as jose from 'jose'
 import { prisma } from '@/lib/prisma'
 
 export async function loginAction(formData: FormData) {
+  if (!process.env.JWT_SECRET) {
+    return { success: false, error: 'Configuração de autenticação inválida' }
+  }
+
   const usernameInput = (formData.get('username') as string)?.trim() || ''
   const password = formData.get('password') as string
 
   if (!usernameInput || !password) {
     return { success: false, error: 'Credenciais inválidas' }
   }
-
-  // Find user ignoring case
   const user = await prisma.user.findFirst({
     where: { 
       username: { 
@@ -26,15 +28,11 @@ export async function loginAction(formData: FormData) {
   if (!user || !user.active) {
     return { success: false, error: 'Credenciais inválidas' }
   }
-
-  // Compare password
   const isValid = await bcrypt.compare(password, user.password)
 
   if (!isValid) {
     return { success: false, error: 'Credenciais inválidas' }
   }
-
-  // Generate JWT
   const secret = new TextEncoder().encode(process.env.JWT_SECRET)
   const alg = 'HS256'
 
@@ -48,20 +46,27 @@ export async function loginAction(formData: FormData) {
     .setIssuedAt()
     .setExpirationTime('7d')
     .sign(secret)
-
-  // Save session in DB
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + 7)
 
-  await prisma.session.create({
-    data: {
-      token,
-      userId: user.id,
-      expiresAt
-    }
-  })
+  await prisma.$transaction(async (tx) => {
+    await tx.session.deleteMany({
+      where: {
+        OR: [
+          { userId: user.id, expiresAt: { lt: new Date() } },
+          { expiresAt: { lt: new Date() } },
+        ],
+      },
+    })
 
-  // Set cookie
+    await tx.session.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt
+      }
+    })
+  })
   const cookieStore = await cookies()
   cookieStore.set({
     name: 'session',
@@ -69,7 +74,7 @@ export async function loginAction(formData: FormData) {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7 // 7 days
+    maxAge: 60 * 60 * 24 * 7
   })
 
   return { success: true, user: { id: user.id, name: user.name, role: user.role, code: user.code } }
@@ -80,15 +85,13 @@ export async function logoutAction() {
   const token = cookieStore.get('session')?.value
 
   if (token) {
-    // Delete session from DB
     await prisma.session.deleteMany({
       where: { token }
     })
   }
-
-  // Clear cookie
   cookieStore.delete('session')
 
   return { success: true }
 }
+
 

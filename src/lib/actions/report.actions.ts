@@ -7,7 +7,7 @@ import { startOfDay, endOfDay } from 'date-fns'
 export async function getReportData(filters: { from?: Date, to?: Date, userId?: string }) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Não autorizado')
+    throw new Error('No autorizado')
   }
 
   const { from, to, userId } = filters
@@ -20,8 +20,6 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
     userId: userId !== 'all' ? userId : undefined
   }
-
-  // 1. Performance por Funcionário
   const entries = await prisma.entry.findMany({
     where,
     include: {
@@ -31,8 +29,6 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     },
     orderBy: { date: 'desc' }
   })
-
-  // Agrupar por funcionário
   const employeePerformance: any = {}
   entries.forEach((entry: any) => {
     if (!employeePerformance[entry.userId]) {
@@ -47,8 +43,6 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     employeePerformance[entry.userId].count += 1
     employeePerformance[entry.userId].total += Number(entry.total)
   })
-
-  // 2. Consumo de Estoque
   const stockConsumption: any = {}
   entries.forEach((entry: any) => {
     if (!stockConsumption[entry.productName]) {
@@ -70,3 +64,4 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     entries // Add this line
   }))
 }
+

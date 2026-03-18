@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
@@ -28,72 +28,68 @@ import { Input } from '@/components/ui/input'
 import { createProduct, updateProduct } from '@/lib/actions/product.actions'
 
 const formSchema = z.object({
-  code: z.string().min(1, 'Código obrigatório'),
+  code: z.string().min(1, 'Codigo obrigatorio'),
   name: z.string().min(2, 'Nome muito curto'),
-  price: z.string().refine((val) => !isNaN(Number(val)), 'Preço inválido'),
-  stock: z.string().refine((val) => !isNaN(Number(val)), 'Estoque inválido'),
+  price: z.string().refine((value) => !isNaN(Number(value)), 'Preco invalido'),
+  stock: z.string().refine((value) => !isNaN(Number(value)), 'Estoque invalido'),
 })
 
+type ProductFormValues = z.infer<typeof formSchema>
+
 interface ProductFormProps {
-  product?: any
+  product?: {
+    id: string
+    code: string
+    name: string
+    price: number
+    stock: number
+  }
   trigger?: React.ReactNode
-  isAdmin?: boolean
   open?: boolean
   setOpen?: (open: boolean) => void
 }
 
-export function ProductForm({ 
-  product, 
-  trigger, 
-  isAdmin = true,
-  open: externalOpen,
-  setOpen: setExternalOpen 
-}: ProductFormProps) {
+export function ProductForm({ product, trigger, open: externalOpen, setOpen: setExternalOpen }: ProductFormProps) {
   const [internalOpen, setInternalOpen] = useState(false)
-  const open = externalOpen !== undefined ? externalOpen : internalOpen
-  const setOpen = setExternalOpen !== undefined ? setExternalOpen : setInternalOpen
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<any>({
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = setExternalOpen !== undefined ? setExternalOpen : setInternalOpen
+
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       code: product?.code || '',
       name: product?.name || '',
-      price: product?.price ? Number(product.price).toString() : '',
+      price: product?.price ? product.price.toString() : '',
       stock: product?.stock?.toString() || '0',
     },
   })
 
   useEffect(() => {
-    if (open) {
-      form.reset({
-        code: product?.code || '',
-        name: product?.name || '',
-        price: product?.price ? Number(product.price).toString() : '',
-        stock: product?.stock?.toString() || '0',
-      })
-    }
-  }, [open, product, form])
+    if (!open) return
 
-  async function onSubmit(values: any) {
+    form.reset({
+      code: product?.code || '',
+      name: product?.name || '',
+      price: product?.price ? product.price.toString() : '',
+      stock: product?.stock?.toString() || '0',
+    })
+  }, [form, open, product])
+
+  async function onSubmit(values: ProductFormValues) {
     setIsLoading(true)
-    let result
-    
-    if (product?.id) {
-      result = await updateProduct(product.id, values)
-    } else {
-      result = await createProduct(values)
-    }
-    
+    const result = product?.id ? await updateProduct(product.id, values) : await createProduct(values)
     setIsLoading(false)
 
     if (result.success) {
       toast.success(product?.id ? 'Item atualizado!' : 'Item cadastrado!')
       setOpen(false)
       if (!product?.id) form.reset()
-    } else {
-      toast.error(result.error || 'Erro ao processar')
+      return
     }
+
+    toast.error(result.error || 'Erro ao processar')
   }
 
   return (
@@ -102,11 +98,11 @@ export function ProductForm({
         <DialogTrigger
           render={
             trigger ? (
-              trigger as any
+              trigger as React.ReactElement
             ) : (
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-95">
                 <Plus className="mr-2 h-5 w-5" />
-                Novo Produto / Serviço
+                Novo Produto / Servico
               </Button>
             )
           }
@@ -115,12 +111,10 @@ export function ProductForm({
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">
-            {product?.id ? 'Editar Item' : 'Cadastrar Item'}
+            {product?.id ? 'Editar item' : 'Cadastrar item'}
           </DialogTitle>
           <DialogDescription>
-            {product?.id 
-              ? 'Atualize as informações do produto ou serviço no sistema.' 
-              : 'Adicione um novo produto ou serviço ao catálogo do sistema.'}
+            {product?.id ? 'Atualize as informacoes do item.' : 'Adicione um novo item ao catalogo.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -130,14 +124,9 @@ export function ProductForm({
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Código Único (Ex: IMP-PB)</FormLabel>
+                  <FormLabel className="font-bold">Codigo unico</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Código identificador" 
-                      className="rounded-xl h-11 uppercase" 
-                      disabled={!!product?.id}
-                      {...field} 
-                    />
+                    <Input placeholder="IMP-PB" className="rounded-xl h-11 uppercase" disabled={!!product?.id} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,9 +137,9 @@ export function ProductForm({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Nome do Produto / Serviço</FormLabel>
+                  <FormLabel className="font-bold">Nome do produto / servico</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Impressão P&B" className="rounded-xl h-11" {...field} />
+                    <Input placeholder="Ex: Impressao P&B" className="rounded-xl h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -162,7 +151,7 @@ export function ProductForm({
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Preço Unitário (R$)</FormLabel>
+                    <FormLabel className="font-bold">Preco unitario (R$)</FormLabel>
                     <FormControl>
                       <Input placeholder="0.25" className="rounded-xl h-11" {...field} />
                     </FormControl>
@@ -177,11 +166,7 @@ export function ProductForm({
                   <FormItem>
                     <FormLabel className="font-bold">Estoque</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="500" 
-                        className="rounded-xl h-11" 
-                        {...field} 
-                      />
+                      <Input placeholder="500" className="rounded-xl h-11" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -195,7 +180,7 @@ export function ProductForm({
                   Salvando...
                 </>
               ) : (
-                'Salvar Item'
+                'Salvar item'
               )}
             </Button>
           </form>
@@ -204,4 +189,3 @@ export function ProductForm({
     </Dialog>
   )
 }
-

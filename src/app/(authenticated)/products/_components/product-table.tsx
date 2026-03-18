@@ -1,20 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { 
-  MoreHorizontal, 
-  Edit2, 
-  Trash2, 
-  Package, 
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  MoreHorizontal,
+  Edit2,
+  Trash2,
+  Package,
   AlertTriangle,
   Search,
   X,
   ChevronLeft,
-  ChevronRight 
+  ChevronRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,62 +44,64 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
 import { ProductForm } from './product-form'
 import { deleteProduct } from '@/lib/actions/product.actions'
 
-interface ProductTableProps {
-  products: any[]
-  isAdmin: boolean
+interface ProductRow {
+  id: string
+  code: string
+  name: string
+  price: number
+  stock: number
+  active: boolean
 }
 
-export function ProductTable({ products, isAdmin }: ProductTableProps) {
+interface ProductTableProps {
+  products: ProductRow[]
+}
+
+export function ProductTable({ products }: ProductTableProps) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
-  const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [productToDelete, setProductToDelete] = useState<any>(null)
+  const [productToDelete, setProductToDelete] = useState<ProductRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.code.toLowerCase().includes(search.toLowerCase())
-  )
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredProducts = useMemo(() => {
+    if (!normalizedSearch) return products
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+    return products.filter((product) =>
+      product.name.toLowerCase().includes(normalizedSearch) ||
+      product.code.toLowerCase().includes(normalizedSearch)
+    )
+  }, [normalizedSearch, products])
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))
+  const safePage = Math.min(currentPage, totalPages)
+  const startIndex = (safePage - 1) * itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [search])
-
-  const onDeleteProduct = (product: any) => {
-    setProductToDelete(product)
-    setIsDeleteOpen(true)
-  }
 
   const confirmDelete = async () => {
     if (!productToDelete) return
-    
+
     setIsDeleting(true)
     const result = await deleteProduct(productToDelete.id)
     setIsDeleting(false)
     setIsDeleteOpen(false)
-    setProductToDelete(null)
 
     if (result.success) {
-      toast.success('Item excluído com sucesso!')
-    } else {
-      toast.error(result.error || 'Erro ao excluir item')
+      setProductToDelete(null)
+      toast.success('Item excluido com sucesso!')
+      router.refresh()
+      return
     }
-  }
 
-  const onEdit = (product: any) => {
-    setEditingProduct(product)
-    setIsFormOpen(true)
+    toast.error(result.error || 'Erro ao excluir item')
   }
 
   return (
@@ -107,14 +109,20 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder="Buscar por nome ou código..."
+          placeholder="Buscar por nome ou codigo..."
           className="pl-10 rounded-xl bg-white border-slate-200"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setCurrentPage(1)
+          }}
         />
         {search && (
-          <button 
-            onClick={() => setSearch('')}
+          <button
+            onClick={() => {
+              setSearch('')
+              setCurrentPage(1)
+            }}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
           >
             <X className="h-3 w-3" />
@@ -127,28 +135,28 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
           <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
             <TableRow>
               <TableHead className="font-bold py-4">Item</TableHead>
-              <TableHead className="font-bold">Código</TableHead>
-              <TableHead className="font-bold">Preço Unitário</TableHead>
+              <TableHead className="font-bold">Codigo</TableHead>
+              <TableHead className="font-bold">Preco Unitario</TableHead>
               <TableHead className="font-bold">Estoque</TableHead>
-            <TableHead className="text-right font-bold pr-6">Ações</TableHead>
+              <TableHead className="text-right font-bold pr-6">Acoes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
-                  {search ? 'Nenhum item encontrado para esta busca.' : 'Nenhum produto ou serviço cadastrado.'}
+                  {search ? 'Nenhum item encontrado para esta busca.' : 'Nenhum produto ou servico cadastrado.'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedProducts.map((product) => {
                 const isLowStock = product.stock <= 5
                 const isActive = product.active !== false
-                
+
                 return (
                   <TableRow key={product.id} className={cn(
-                    "hover:bg-slate-50/50 transition-colors group",
-                    !isActive && "opacity-60 bg-slate-50/30"
+                    'hover:bg-slate-50/50 transition-colors group',
+                    !isActive && 'opacity-60 bg-slate-50/30'
                   )}>
                     <TableCell className="py-4">
                       <div className="flex items-center gap-3">
@@ -169,19 +177,19 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-bold text-slate-700 dark:text-zinc-300">
-                      R$ {Number(product.price).toFixed(2).replace('.', ',')}
+                      R$ {product.price.toFixed(2).replace('.', ',')}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className={cn(
-                          "font-extrabold text-sm",
-                          isLowStock ? "text-red-600" : "text-slate-900 dark:text-zinc-100"
+                          'font-extrabold text-sm',
+                          isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
                         )}>
                           {product.stock}
                         </span>
                         {isLowStock && (
                           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase tracking-tight">
-                            <AlertTriangle className="h-3 w-3" /> Estoque Baixo
+                            <AlertTriangle className="h-3 w-3" /> Estoque baixo
                           </div>
                         )}
                       </div>
@@ -196,23 +204,26 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
                           }
                         />
                         <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
-                          <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Gerenciar Item</DropdownMenuLabel>
+                          <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Gerenciar item</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => onEdit(product)}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setEditingProduct(product)
+                              setIsFormOpen(true)
+                            }}
                             className="rounded-lg h-9 font-medium cursor-pointer"
                           >
-                            <Edit2 className="mr-2 h-4 w-4" /> Editar Detalhes
+                            <Edit2 className="mr-2 h-4 w-4" /> Editar detalhes
                           </DropdownMenuItem>
-
-                          {isAdmin && (
-                            <DropdownMenuItem 
-                              onClick={() => onDeleteProduct(product)}
-                              className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Excluir Item
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setProductToDelete(product)
+                              setIsDeleteOpen(true)
+                            }}
+                            className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir item
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -224,7 +235,7 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {filteredProducts.length > 0 && totalPages > 1 && (
         <div className="flex items-center justify-between px-2 py-2">
           <p className="text-sm text-slate-500 font-medium italic">
             Mostrando <span className="font-extrabold text-blue-600">{paginatedProducts.length}</span> de <span className="font-extrabold text-slate-900">{filteredProducts.length}</span> produtos
@@ -233,53 +244,42 @@ export function ProductTable({ products, isAdmin }: ProductTableProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safePage === 1}
               className="rounded-xl font-bold"
             >
               <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
             </Button>
             <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-extrabold text-blue-600">
-              {currentPage} / {totalPages}
+              {safePage} / {totalPages}
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={safePage === totalPages}
               className="rounded-xl font-bold"
             >
-              Próximo <ChevronRight className="h-4 w-4 ml-1" />
+              Proximo <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         </div>
       )}
 
-      <ProductForm 
-        product={editingProduct} 
-        isAdmin={isAdmin} 
-        open={isFormOpen} 
-        setOpen={setIsFormOpen} 
-        trigger={null}
-      />
+      <ProductForm product={editingProduct ?? undefined} open={isFormOpen} setOpen={setIsFormOpen} trigger={null} />
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Item?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir item?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <span className="font-bold">"{productToDelete?.name}"</span>? 
-              Esta ação não pode ser desfeita e removerá o item permanentemente do sistema.
+              Tem certeza que deseja excluir <span className="font-bold">&quot;{productToDelete?.name}&quot;</span>? Esta acao nao pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl"
-            >
-              {isDeleting ? 'Excluindo...' : 'Sim, Excluir'}
+            <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl">
+              {isDeleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -36,9 +36,9 @@ export function Sidebar({ role, userName, userCode }: SidebarProps) {
 
   const adminItems: SidebarItem[] = [
     { title: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { title: 'Funcionários', href: '/admin/employees', icon: Users },
+    { title: 'Funcionrios', href: '/admin/employees', icon: Users },
     { title: 'Produtos / Estoque', href: '/products', icon: Package },
-    { title: 'Relatórios', href: '/admin/reports', icon: FileText },
+    { title: 'Relatrios', href: '/admin/reports', icon: FileText },
   ]
 
   const employeeItems: SidebarItem[] = [
@@ -63,7 +63,7 @@ export function Sidebar({ role, userName, userCode }: SidebarProps) {
         </div>
         <div className="flex flex-col">
           <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">Xerox Manager</span>
-          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Gestão Digital</span>
+          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">Gesto Digital</span>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function Sidebar({ role, userName, userCode }: SidebarProps) {
               "text-[10px] font-extrabold uppercase tracking-widest",
               role === 'ADMIN' ? "text-amber-600 dark:text-amber-500" : "text-blue-600 dark:text-blue-400"
             )}>
-              {role === 'ADMIN' ? 'Administrador' : 'Funcionário'}
+              {role === 'ADMIN' ? 'Administrador' : 'Funcionrio'}
             </span>
           </div>
         </div>
@@ -133,4 +133,5 @@ export function Sidebar({ role, userName, userCode }: SidebarProps) {
     </aside>
   )
 }
+
 

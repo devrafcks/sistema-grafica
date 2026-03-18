@@ -36,10 +36,10 @@ import { createEmployee, updateEmployee } from '@/lib/actions/employee.actions'
 
 const formSchema = z.object({
   id: z.string().optional(), // Keep id for refine function
-  name: z.string().min(1, 'Nome é obrigatório'),
-  username: z.string().min(3, 'Usuário deve ter pelo menos 3 caracteres'),
+  name: z.string().min(1, 'Nome  obrigatrio'),
+  username: z.string().min(3, 'Usurio deve ter pelo menos 3 caracteres'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
-  code: z.string().min(1, 'Código é obrigatório'),
+  code: z.string().min(1, 'Cdigo  obrigatrio'),
   role: z.enum(['ADMIN', 'EMPLOYEE']),
 })
 .refine((data) => {
@@ -48,7 +48,7 @@ const formSchema = z.object({
   }
   return true
 }, {
-  message: "Senha deve ter no mínimo 6 caracteres para novos funcionários",
+  message: "Senha deve ter no mnimo 6 caracteres para novos funcionrios",
   path: ["password"],
 })
 
@@ -81,8 +81,6 @@ export function EmployeeForm({
       role: employee?.role || 'EMPLOYEE',
     },
   })
-
-  // Reset form when employee changes or dialog opens
   useEffect(() => {
     if (open) {
       form.reset({
@@ -109,11 +107,11 @@ export function EmployeeForm({
     setIsLoading(false)
 
     if (result.success) {
-      toast.success(employee?.id ? 'Funcionário atualizado!' : 'Funcionário criado!')
+      toast.success(employee?.id ? 'Funcionrio atualizado!' : 'Funcionrio criado!')
       setOpen(false)
       if (!employee?.id) form.reset()
     } else {
-      toast.error(result.error || 'Erro ao processar solicitação')
+      toast.error(result.error || 'Erro ao processar solicitao')
     }
   }
 
@@ -127,7 +125,7 @@ export function EmployeeForm({
             ) : (
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-95">
                 <Plus className="mr-2 h-5 w-5" />
-                Novo Funcionário
+                Novo Funcionrio
               </Button>
             )
           }
@@ -136,11 +134,11 @@ export function EmployeeForm({
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">
-            {employee?.id ? 'Editar Funcionário' : 'Cadastrar Funcionário'}
+            {employee?.id ? 'Editar Funcionrio' : 'Cadastrar Funcionrio'}
           </DialogTitle>
           <DialogDescription>
             {employee?.id 
-              ? 'Atualize os dados de acesso e permissões do funcionário.' 
+              ? 'Atualize os dados de acesso e permisses do funcionrio.' 
               : 'Preencha os dados abaixo para criar um novo acesso ao sistema.'}
           </DialogDescription>
         </DialogHeader>
@@ -153,7 +151,7 @@ export function EmployeeForm({
                 <FormItem>
                   <FormLabel className="font-bold">Nome Completo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: João Silva" className="rounded-xl h-11" {...field} />
+                    <Input placeholder="Ex: Joo Silva" className="rounded-xl h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +163,7 @@ export function EmployeeForm({
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Código</FormLabel>
+                    <FormLabel className="font-bold">Cdigo</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: 001" className="rounded-xl h-11" {...field} />
                     </FormControl>
@@ -186,7 +184,7 @@ export function EmployeeForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-xl border-none shadow-xl">
-                        <SelectItem value="EMPLOYEE" className="font-bold cursor-pointer">Funcionário</SelectItem>
+                        <SelectItem value="EMPLOYEE" className="font-bold cursor-pointer">Funcionrio</SelectItem>
                         <SelectItem value="ADMIN" className="font-bold cursor-pointer">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
@@ -202,7 +200,7 @@ export function EmployeeForm({
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Usuário (Login)</FormLabel>
+                    <FormLabel className="font-bold">Usurio (Login)</FormLabel>
                     <FormControl>
                       <Input placeholder="ex: joao.silva" className="rounded-xl h-11" {...field} />
                     </FormControl>
@@ -219,7 +217,7 @@ export function EmployeeForm({
                       {employee?.id ? 'Alterar Senha' : 'Senha'}
                     </FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" className="rounded-xl h-11" {...field} />
+                      <Input type="password" placeholder="........" className="rounded-xl h-11" {...field} />
                     </FormControl>
                     {employee?.id && (
                       <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Deixe vazio para manter</p>
@@ -237,7 +235,7 @@ export function EmployeeForm({
                   Salvando...
                 </>
               ) : (
-                employee?.id ? 'Atualizar Dados' : 'Salvar Funcionário'
+                employee?.id ? 'Atualizar Dados' : 'Salvar Funcionrio'
               )}
             </Button>
           </form>
@@ -246,3 +244,4 @@ export function EmployeeForm({
     </Dialog>
   )
 }
+

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { 
@@ -51,8 +51,6 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isFiltering, setIsFiltering] = useState(false)
-  
-  // Filtros
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date())
@@ -135,8 +133,6 @@ export default function ReportsPage() {
           </Button>
         </div>
       </div>
-
-      {/* Filtros */}
       <Card className="border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-visible border-none bg-white/50 backdrop-blur-sm">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -375,4 +371,5 @@ export default function ReportsPage() {
     </div>
   )
 }
+
 

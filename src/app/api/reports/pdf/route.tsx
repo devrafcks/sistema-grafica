@@ -39,15 +39,15 @@ const MyDocument = ({ data, range }: { data: any, range: string }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.subtitle}>Relatório Gerencial</Text>
+        <Text style={styles.subtitle}>Relatrio Gerencial</Text>
         <Text style={styles.title}>Xerox Manager</Text>
-        <Text style={styles.range}>Período: {range}</Text>
+        <Text style={styles.range}>Perodo: {range}</Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Consumo de Estoque</Text>
         <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderCell}>Produto / Serviço</Text>
+          <Text style={styles.tableHeaderCell}>Produto / Servio</Text>
           <Text style={styles.tableHeaderCellRight}>Quantidade</Text>
           <Text style={styles.tableHeaderCellRight}>Total (R$)</Text>
         </View>
@@ -63,8 +63,8 @@ const MyDocument = ({ data, range }: { data: any, range: string }) => (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Desempenho da Equipe</Text>
         <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderCell}>Funcionário</Text>
-          <Text style={styles.tableHeaderCellRight}>Lançamentos</Text>
+          <Text style={styles.tableHeaderCell}>Funcionrio</Text>
+          <Text style={styles.tableHeaderCellRight}>Lanamentos</Text>
           <Text style={styles.tableHeaderCellRight}>Produzido (R$)</Text>
         </View>
         {data.employeePerformance.map((e: any, i: number) => (
@@ -78,7 +78,7 @@ const MyDocument = ({ data, range }: { data: any, range: string }) => (
 
       <View style={styles.summaryBox}>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>TOTAL DE LANÇAMENTOS</Text>
+          <Text style={styles.summaryLabel}>TOTAL DE LANAMENTOS</Text>
           <Text style={styles.summaryValue}>{data.totalEntries}</Text>
         </View>
         <View style={styles.summaryRow}>
@@ -88,7 +88,7 @@ const MyDocument = ({ data, range }: { data: any, range: string }) => (
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Xerox Manager v1.0 — Gestão Digital</Text>
+        <Text style={styles.footerText}>Xerox Manager v1.0 - Gesto Digital</Text>
         <Text style={styles.footerText}>Gerado em {new Date().toLocaleString('pt-BR')}</Text>
       </View>
     </Page>
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId') || 'all'
 
     const data = await getReportData({ from, to, userId })
-    const range = `${fromStr || '?'} até ${toStr || '?'}`
+    const range = `${fromStr || '?'} at ${toStr || '?'}`
 
     const buffer = await renderToBuffer(<MyDocument data={data} range={range} />)
 
@@ -120,3 +120,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
+

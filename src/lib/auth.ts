@@ -1,7 +1,9 @@
 import * as jose from 'jose'
 import { cookies } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+const jwtSecret = process.env.JWT_SECRET
+const secret = jwtSecret ? new TextEncoder().encode(jwtSecret) : null
 
 export interface UserSession {
   sub: string
@@ -11,10 +13,37 @@ export interface UserSession {
 }
 
 export async function verifySession(token: string): Promise<UserSession | null> {
+  if (!secret) return null
+
   try {
-    const { payload } = await jose.jwtVerify(token, secret)
-    return payload as unknown as UserSession
-  } catch (error) {
+    await jose.jwtVerify(token, secret)
+    const session = await prisma.session.findUnique({
+      where: { token },
+      select: {
+        user: {
+          select: {
+            id: true,
+            role: true,
+            code: true,
+            name: true,
+            active: true,
+          },
+        },
+        expiresAt: true,
+      },
+    })
+
+    if (!session || !session.user.active || session.expiresAt <= new Date()) {
+      return null
+    }
+
+    return {
+      sub: session.user.id,
+      role: session.user.role,
+      code: session.user.code,
+      name: session.user.name,
+    }
+  } catch {
     return null
   }
 }

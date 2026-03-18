@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -32,8 +32,6 @@ export default function LoginForm() {
         setIsLoading(false)
         return
       }
-
-      // Redireciona com base no papel (role)
       if (result.user?.role === 'ADMIN') {
         router.push('/admin')
       } else {
@@ -114,3 +112,4 @@ export default function LoginForm() {
     </form>
   )
 }
+

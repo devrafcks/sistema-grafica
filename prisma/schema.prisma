@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -9,20 +8,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── ENUMS ───────────────────────────────────────────────────────────────────
-
 enum Role {
   ADMIN
   EMPLOYEE
 }
 
-// ─── MODELS ──────────────────────────────────────────────────────────────────
-
 model User {
   id        String    @id @default(cuid())
-  /// Código único de identificação do funcionário (ex: "001", "FUN-023")
   code      String    @unique
-  /// Username para login
   username  String    @unique
   name      String
   password  String    // bcrypt hash
@@ -49,17 +42,14 @@ model Session {
 
   @@index([token])
   @@index([userId])
+  @@index([expiresAt])
 }
 
 model Product {
-  /// Produto = Serviço. A mesma entidade serve para ambos os conceitos.
   id        String   @id @default(cuid())
-  /// Código único do produto (ex: "001", "IMP-PB", "PLAST-A4")
   code      String   @unique
   name      String
-  /// Preço unitário base. Pode ser sobrescrito no lançamento.
   price     Decimal  @db.Decimal(10, 2)
-  /// Quantidade atual em estoque. Nunca pode ser negativo.
   stock     Int      @default(0)
   active    Boolean  @default(true)
 
@@ -79,26 +69,13 @@ model Entry {
 
   productId String
   product   Product  @relation(fields: [productId], references: [id])
-
-  /// Nome do produto no momento do lançamento (imutável para histórico)
   productName  String
-  /// Preço unitário aplicado no lançamento (pode diferir do base)
   unitPrice    Decimal  @db.Decimal(10, 2)
-  /// Quantidade lançada
   qty          Int
-  /// Total = qty * unitPrice (calculado e salvo na API)
   total        Decimal  @db.Decimal(10, 2)
-
-  /// Nota opcional do funcionário
   note         String?
-
-  /// Flag se o preço foi editado manualmente
   priceEdited  Boolean  @default(false)
-
-  /// Data do lançamento (sem hora, para filtros de "hoje" e mensais)
   date         DateTime @default(now())
-
-  /// Auditoria de edição
   editedAt     DateTime?
 
   createdAt    DateTime @default(now())
@@ -108,4 +85,6 @@ model Entry {
   @@index([productId])
   @@index([date])
   @@index([userId, date])
+  @@index([userId, createdAt])
 }
+

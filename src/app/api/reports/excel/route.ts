@@ -12,34 +12,28 @@ export async function GET(req: NextRequest) {
     const data = await getReportData({ from, to, userId })
 
     const wb = XLSX.utils.book_new()
-    
-    // Aba 1: Consumo de Estoque
     const wsStock = XLSX.utils.json_to_sheet(data.stockConsumption.map((item: any) => ({
-      'Produto/Serviço': item.name,
+      'Produto/Servio': item.name,
       'Quantidade': item.qty,
       'Total (R$)': item.total
     })))
     XLSX.utils.book_append_sheet(wb, wsStock, 'Estoque')
-
-    // Aba 2: Desempenho Equipe
     const wsTeam = XLSX.utils.json_to_sheet(data.employeePerformance.map((e: any) => ({
       'Nome': e.name,
-      'Código': e.code,
-      'Lançamentos': e.count,
+      'Cdigo': e.code,
+      'Lanamentos': e.count,
       'Total (R$)': e.total
     })))
     XLSX.utils.book_append_sheet(wb, wsTeam, 'Equipe')
-
-    // Aba 3: Detalhes dos Lançamentos
     const wsDetails = XLSX.utils.json_to_sheet(data.entries.map((entry: any) => ({
       'Data/Hora': new Date(entry.createdAt).toLocaleString('pt-BR'),
-      'Funcionário': entry.user.name,
-      'Código Func.': entry.user.code,
-      'Produto/Serviço': entry.productName,
+      'Funcionrio': entry.user.name,
+      'Cdigo Func.': entry.user.code,
+      'Produto/Servio': entry.productName,
       'Qtde': entry.qty,
-      'Preço Unit.': entry.unitPrice,
+      'Preo Unit.': entry.unitPrice,
       'Total': entry.total,
-      'Observação': entry.note || ''
+      'Observao': entry.note || ''
     })))
     XLSX.utils.book_append_sheet(wb, wsDetails, 'Detalhes')
 
@@ -56,3 +50,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
+
