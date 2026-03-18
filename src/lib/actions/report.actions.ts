@@ -7,7 +7,7 @@ import { startOfDay, endOfDay } from 'date-fns'
 export async function getReportData(filters: { from?: Date, to?: Date, userId?: string }) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('No autorizado')
+    throw new Error('Não autorizado')
   }
 
   const { from, to, userId } = filters
@@ -61,7 +61,7 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     stockConsumption: Object.values(stockConsumption),
     totalRevenue: Object.values(employeePerformance).reduce((acc: number, curr: any) => acc + curr.total, 0),
     totalEntries: entries.length,
-    entries // Add this line
+    entries
   }))
 }
 

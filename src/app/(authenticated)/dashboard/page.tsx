@@ -33,25 +33,25 @@ export default async function EmployeeDashboardPage() {
 
   const dashboardCards = [
     { 
-      label: 'Produo Hoje (R$)', 
+      label: 'Produção hoje (R$)', 
       value: `R$ ${Number(stats?.totalRevenue || 0).toFixed(2).replace('.', ',')}`, 
       icon: DollarSign, 
       color: 'bg-green-500',
       description: 'Total acumulado no dia'
     },
     { 
-      label: 'Lanamentos Hoje', 
+      label: 'Lançamentos hoje', 
       value: stats?.totalEntries || 0, 
       icon: Activity, 
       color: 'bg-blue-500',
-      description: 'Quantidade de servios registrados'
+      description: 'Quantidade de serviços registrados'
     },
     { 
-      label: 'Mais Realizado', 
+      label: 'Mais realizado', 
       value: stats?.topService || '---', 
       icon: TrendingUp, 
       color: 'bg-purple-500',
-      description: 'Servio campeo do dia'
+      description: 'Serviço campeão do dia'
     },
   ]
 
@@ -60,7 +60,7 @@ export default async function EmployeeDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-brand-dark dark:text-zinc-50 leading-tight">Meu <span className="text-brand-primary">Dashboard</span></h1>
-          <p className="text-brand-muted dark:text-zinc-400 text-lg">Resumo do seu desempenho e atividades dirias.</p>
+          <p className="text-brand-muted dark:text-zinc-400 text-lg">Resumo do seu desempenho e atividades diárias.</p>
         </div>
         
         <EntryForm />
@@ -84,10 +84,10 @@ export default async function EmployeeDashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight text-brand-dark dark:text-zinc-50 flex items-center gap-2">
-            <History className="h-6 w-6 text-brand-primary" /> Histrico Recente
+            <History className="h-6 w-6 text-brand-primary" /> Histórico recente
           </h2>
           <Badge variant="outline" className="px-3 py-1 font-bold text-xs bg-brand-bg-subtle text-brand-muted border-brand-border">
-            ltimos 10 Lanamentos
+            Últimos 10 lançamentos
           </Badge>
         </div>
 
@@ -95,8 +95,8 @@ export default async function EmployeeDashboardPage() {
           <Table>
             <TableHeader className="bg-brand-bg-subtle/50 dark:bg-zinc-900/50">
               <TableRow>
-                <TableHead className="font-bold py-4">Servio / Produto</TableHead>
-                <TableHead className="font-bold">Horrio</TableHead>
+                <TableHead className="font-bold py-4">Serviço / produto</TableHead>
+                <TableHead className="font-bold">Horário</TableHead>
                 <TableHead className="font-bold text-center">Qtd.</TableHead>
                 <TableHead className="font-bold text-right pr-8 text-brand-primary">Total (R$)</TableHead>
               </TableRow>
@@ -107,8 +107,8 @@ export default async function EmployeeDashboardPage() {
                   <TableCell colSpan={4} className="h-48 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <Activity className="h-10 w-10 opacity-20" />
-                      <p className="italic">Nenhum lanamento registrado recentemente.</p>
-                      <p className="text-xs">Use o boto "Novo Lanamento" para comear.</p>
+                      <p className="italic">Nenhum lançamento registrado recentemente.</p>
+                      <p className="text-xs">Use o botão "Novo lançamento" para começar.</p>
                     </div>
                   </TableCell>
                 </TableRow>

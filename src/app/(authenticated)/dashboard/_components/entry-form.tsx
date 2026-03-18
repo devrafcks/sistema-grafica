@@ -30,10 +30,10 @@ import { useProductLookup, useProductSearch } from '@/hooks/useProductLookup'
 import { createEntry } from '@/lib/actions/entry.actions'
 
 const formSchema = z.object({
-  productQuery: z.string().min(1, 'Digite o nome ou cdigo do produto'),
-  productId: z.string().min(1, 'Produto no encontrado'),
+  productQuery: z.string().min(1, 'Digite o nome ou código do produto'),
+  productId: z.string().min(1, 'Produto não encontrado'),
   qty: z.string().refine((val) => Number(val) > 0, 'Quantidade deve ser maior que zero'),
-  unitPrice: z.string().refine((val) => Number(val) >= 0, 'Preo invlido'),
+  unitPrice: z.string().refine((val) => Number(val) >= 0, 'Preço inválido'),
   note: z.string().optional(),
 })
 
@@ -89,11 +89,11 @@ export function EntryForm() {
     setIsLoading(false)
 
     if (result.success) {
-      toast.success('Lanamento realizado com sucesso!')
+      toast.success('Lançamento realizado com sucesso!')
       setOpen(false)
       form.reset()
     } else {
-      toast.error(result.error || 'Erro ao realizar lanamento')
+      toast.error(result.error || 'Erro ao realizar lançamento')
     }
   }
 
@@ -103,15 +103,15 @@ export function EntryForm() {
         render={
           <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-12 px-6 shadow-lg shadow-blue-500/20 transition-all active:scale-95">
             <Plus className="mr-2 h-5 w-5" />
-            Novo Lanamento
+            Novo lançamento
           </Button>
         }
       />
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight">Novo Servio</DialogTitle>
+          <DialogTitle className="text-2xl font-bold tracking-tight">Novo serviço</DialogTitle>
           <DialogDescription>
-            Registre um novo servio prestado ou venda realizada.
+            Registre um novo serviço prestado ou uma venda realizada.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -123,20 +123,20 @@ export function EntryForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold flex justify-between">
-                      Produto ou Servio
+                      Produto ou serviço
                       {searchLoading && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                     </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
-                          placeholder="Digite o nome ou cdigo..." 
+                          placeholder="Digite o nome ou código..." 
                           className="rounded-xl h-11 pr-10" 
                           {...field}
                           autoComplete="off"
                           onFocus={() => setShowSuggestions(true)}
                           onChange={(e) => {
                             field.onChange(e)
-                            form.setValue('productId', '') // Clear ID when typing
+                            form.setValue('productId', '')
                             setShowSuggestions(true)
                           }}
                         />
@@ -160,7 +160,7 @@ export function EntryForm() {
                       >
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900 group-hover:text-blue-600">{p.name}</span>
-                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">Cd: {p.code}</span>
+                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">Cód.: {p.code}</span>
                         </div>
                         <div className="text-right">
                           <span className="block font-extrabold text-blue-600">R$ {Number(p.price).toFixed(2)}</span>
@@ -178,7 +178,7 @@ export function EntryForm() {
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-blue-500" />
                   <span className="text-xs font-bold text-blue-700 uppercase">
-                    Estoque Disponvel
+                    Estoque disponível
                   </span>
                 </div>
                 <span className="text-sm font-extrabold text-blue-800">
@@ -206,7 +206,7 @@ export function EntryForm() {
                 name="unitPrice"
                 render={({ field }: { field: any }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Preo Unit. (R$)</FormLabel>
+                    <FormLabel className="font-bold">Preço unit. (R$)</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" className="rounded-xl h-11" {...field} />
                     </FormControl>
@@ -221,9 +221,9 @@ export function EntryForm() {
               name="note"
               render={({ field }: { field: any }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Observao (Opcional)</FormLabel>
+                  <FormLabel className="font-bold">Observação (opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Cpia colorida" className="rounded-xl h-11" {...field} />
+                    <Input placeholder="Ex: Cópia colorida" className="rounded-xl h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -233,7 +233,7 @@ export function EntryForm() {
             <div className="bg-slate-50 dark:bg-zinc-900 p-4 rounded-xl flex items-center justify-between border border-slate-100 dark:border-zinc-800">
               <div className="flex items-center gap-2 text-slate-500">
                 <Calculator className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase">Total do Lanamento</span>
+                <span className="text-xs font-bold uppercase">Total do lançamento</span>
               </div>
               <span className="text-xl font-extrabold text-blue-600">
                 R$ {total.replace('.', ',')}
@@ -247,7 +247,7 @@ export function EntryForm() {
                   Salvando...
                 </>
               ) : (
-                'Finalizar Lanamento'
+                'Finalizar lançamento'
               )}
             </Button>
           </form>

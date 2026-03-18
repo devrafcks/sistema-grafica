@@ -4,7 +4,7 @@ import { CheckCircle2, Package } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Acesso - Xerox Manager",
-  description: "Faca login no sistema de gestao de vale-caixa",
+  description: "Faça login no sistema de gestão de vale-caixa",
 }
 
 export default function LoginPage() {
@@ -56,8 +56,8 @@ export default function LoginPage() {
                   <CheckCircle2 className="h-5 w-5 text-white shrink-0" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-white">Lancamentos rapidos</h3>
-                  <p className="text-brand-primary-light text-sm mt-1">Registre copias, impressoes e encadernacoes em segundos.</p>
+                  <h3 className="font-semibold text-lg text-white">Lançamentos rápidos</h3>
+                  <p className="text-brand-primary-light text-sm mt-1">Registre cópias, impressões e encadernações em segundos.</p>
                 </div>
               </div>
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg text-white">Controle de estoque</h3>
-                  <p className="text-brand-primary-light text-sm mt-1">O sistema reduz automaticamente o estoque a cada operacao.</p>
+                  <p className="text-brand-primary-light text-sm mt-1">O sistema reduz automaticamente o estoque a cada operação.</p>
                 </div>
               </div>
 
@@ -76,8 +76,8 @@ export default function LoginPage() {
                   <CheckCircle2 className="h-5 w-5 text-white shrink-0" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-white">Relatorios em tempo real</h3>
-                  <p className="text-brand-primary-light text-sm mt-1">Dashboard e fechamento automatico com exportacao e PDF.</p>
+                  <h3 className="font-semibold text-lg text-white">Relatórios em tempo real</h3>
+                  <p className="text-brand-primary-light text-sm mt-1">Dashboard e fechamento automático com exportação em PDF.</p>
                 </div>
               </div>
             </div>

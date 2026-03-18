@@ -28,10 +28,10 @@ import { Input } from '@/components/ui/input'
 import { createProduct, updateProduct } from '@/lib/actions/product.actions'
 
 const formSchema = z.object({
-  code: z.string().min(1, 'Codigo obrigatorio'),
+  code: z.string().min(1, 'Código obrigatório'),
   name: z.string().min(2, 'Nome muito curto'),
-  price: z.string().refine((value) => !isNaN(Number(value)), 'Preco invalido'),
-  stock: z.string().refine((value) => !isNaN(Number(value)), 'Estoque invalido'),
+  price: z.string().refine((value) => !isNaN(Number(value)), 'Preço inválido'),
+  stock: z.string().refine((value) => !isNaN(Number(value)), 'Estoque inválido'),
 })
 
 type ProductFormValues = z.infer<typeof formSchema>
@@ -102,7 +102,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
             ) : (
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-95">
                 <Plus className="mr-2 h-5 w-5" />
-                Novo Produto / Servico
+                Novo Produto / Serviço
               </Button>
             )
           }
@@ -114,7 +114,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
             {product?.id ? 'Editar item' : 'Cadastrar item'}
           </DialogTitle>
           <DialogDescription>
-            {product?.id ? 'Atualize as informacoes do item.' : 'Adicione um novo item ao catalogo.'}
+            {product?.id ? 'Atualize as informações do item.' : 'Adicione um novo item ao catálogo.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -124,7 +124,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Codigo unico</FormLabel>
+                  <FormLabel className="font-bold">Código único</FormLabel>
                   <FormControl>
                     <Input placeholder="IMP-PB" className="rounded-xl h-11 uppercase" disabled={!!product?.id} {...field} />
                   </FormControl>
@@ -137,9 +137,9 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Nome do produto / servico</FormLabel>
+                  <FormLabel className="font-bold">Nome do produto / serviço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Impressao P&B" className="rounded-xl h-11" {...field} />
+                    <Input placeholder="Ex: Impressão P&B" className="rounded-xl h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,7 +151,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Preco unitario (R$)</FormLabel>
+                    <FormLabel className="font-bold">Preço unitário (R$)</FormLabel>
                     <FormControl>
                       <Input placeholder="0.25" className="rounded-xl h-11" {...field} />
                     </FormControl>

@@ -73,12 +73,12 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
 
     if (result.success) {
       setEmployeeToDelete(null)
-      toast.success('Funcionario excluido com sucesso!')
+      toast.success('Funcionário excluído com sucesso!')
       router.refresh()
       return
     }
 
-    toast.error(result.error || 'Erro ao excluir funcionario')
+    toast.error(result.error || 'Erro ao excluir funcionário')
   }
 
   return (
@@ -86,19 +86,19 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
       <Table>
         <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
           <TableRow>
-            <TableHead className="font-bold py-4">Funcionario</TableHead>
-            <TableHead className="font-bold">Codigo</TableHead>
-            <TableHead className="font-bold">Usuario</TableHead>
+            <TableHead className="font-bold py-4">Funcionário</TableHead>
+            <TableHead className="font-bold">Código</TableHead>
+            <TableHead className="font-bold">Usuário</TableHead>
             <TableHead className="font-bold">Cargo</TableHead>
             <TableHead className="font-bold">Status</TableHead>
-            <TableHead className="text-right font-bold pr-6">Acoes</TableHead>
+            <TableHead className="text-right font-bold pr-6">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {employees.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                Nenhum funcionario cadastrado.
+                Nenhum funcionário cadastrado.
               </TableCell>
             </TableRow>
           ) : (
@@ -128,7 +128,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                       ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-500'
                       : 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                   )}>
-                    {employee.role === 'ADMIN' ? 'Administrador' : 'Funcionario'}
+                    {employee.role === 'ADMIN' ? 'Administrador' : 'Funcionário'}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -147,13 +147,13 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
                       </Button>
                     } />
                     <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
-                      <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Opcoes</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Opções</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => { setEditingEmployee(employee); setIsFormOpen(true) }} className="rounded-lg h-9 font-medium cursor-pointer">
                         <Edit2 className="mr-2 h-4 w-4" /> Editar perfil
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => { setEmployeeToDelete(employee); setIsDeleteOpen(true) }} className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600">
-                        <UserX className="mr-2 h-4 w-4" /> Excluir funcionario
+                        <UserX className="mr-2 h-4 w-4" /> Excluir funcionário
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -169,9 +169,9 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir funcionario?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir funcionário?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <span className="font-bold">&quot;{employeeToDelete?.name}&quot;</span>? Esta acao remove o acesso e os lancamentos vinculados.
+              Tem certeza de que deseja excluir <span className="font-bold">&quot;{employeeToDelete?.name}&quot;</span>? Esta ação remove o acesso e os lançamentos vinculados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

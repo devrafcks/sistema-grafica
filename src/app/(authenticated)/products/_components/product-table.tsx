@@ -96,7 +96,7 @@ export function ProductTable({ products }: ProductTableProps) {
 
     if (result.success) {
       setProductToDelete(null)
-      toast.success('Item excluido com sucesso!')
+      toast.success('Item excluído com sucesso!')
       router.refresh()
       return
     }
@@ -109,7 +109,7 @@ export function ProductTable({ products }: ProductTableProps) {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder="Buscar por nome ou codigo..."
+          placeholder="Buscar por nome ou código..."
           className="pl-10 rounded-xl bg-white border-slate-200"
           value={search}
           onChange={(event) => {
@@ -135,17 +135,17 @@ export function ProductTable({ products }: ProductTableProps) {
           <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
             <TableRow>
               <TableHead className="font-bold py-4">Item</TableHead>
-              <TableHead className="font-bold">Codigo</TableHead>
-              <TableHead className="font-bold">Preco Unitario</TableHead>
+              <TableHead className="font-bold">Código</TableHead>
+              <TableHead className="font-bold">Preço unitário</TableHead>
               <TableHead className="font-bold">Estoque</TableHead>
-              <TableHead className="text-right font-bold pr-6">Acoes</TableHead>
+              <TableHead className="text-right font-bold pr-6">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
-                  {search ? 'Nenhum item encontrado para esta busca.' : 'Nenhum produto ou servico cadastrado.'}
+                  {search ? 'Nenhum item encontrado para esta busca.' : 'Nenhum produto ou serviço cadastrado.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -260,7 +260,7 @@ export function ProductTable({ products }: ProductTableProps) {
               disabled={safePage === totalPages}
               className="rounded-xl font-bold"
             >
-              Proximo <ChevronRight className="h-4 w-4 ml-1" />
+              Próximo <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         </div>
@@ -273,7 +273,7 @@ export function ProductTable({ products }: ProductTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir item?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <span className="font-bold">&quot;{productToDelete?.name}&quot;</span>? Esta acao nao pode ser desfeita.
+              Tem certeza de que deseja excluir <span className="font-bold">&quot;{productToDelete?.name}&quot;</span>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

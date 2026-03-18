@@ -9,7 +9,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "Xerox Manager",
-  description: "Gesto empresarial completa em um s lugar",
+  description: "Gestão empresarial completa em um só lugar",
 };
 
 export default function RootLayout({

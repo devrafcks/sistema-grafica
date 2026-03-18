@@ -38,11 +38,11 @@ function serializeProduct(product: {
 
 export async function createProduct(data: { code: string; name: string; price: string; stock: string }) {
   const session = await getSession()
-  if (!session) throw new Error('Nao autorizado')
+  if (!session) throw new Error('Não autorizado')
 
   const parsed = createProductSchema.safeParse(data)
   if (!parsed.success) {
-    return { success: false, error: 'Dados invalidos do produto.' }
+    return { success: false, error: 'Dados inválidos do produto.' }
   }
   const { code, name, price, stock } = parsed.data
 
@@ -66,7 +66,7 @@ export async function createProduct(data: { code: string; name: string; price: s
     }
   } catch (error: unknown) {
     if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
-      return { success: false, error: 'Codigo de produto ja cadastrado.' }
+      return { success: false, error: 'Código de produto já cadastrado.' }
     }
 
     return { success: false, error: 'Erro ao criar produto.' }
@@ -75,7 +75,7 @@ export async function createProduct(data: { code: string; name: string; price: s
 
 export async function getProducts() {
   const session = await getSession()
-  if (!session) throw new Error('Nao autorizado')
+  if (!session) throw new Error('Não autorizado')
 
   const products = await prisma.product.findMany({
     where: session.role === 'ADMIN' ? {} : { active: true },
@@ -100,12 +100,12 @@ export async function updateProduct(
   data: { name: string; price?: string; stock?: string; active?: boolean }
 ) {
   const session = await getSession()
-  if (!session) throw new Error('Nao autorizado')
+  if (!session) throw new Error('Não autorizado')
 
   const parsedId = productIdSchema.safeParse(id)
   const parsedData = updateProductSchema.safeParse(data)
   if (!parsedId.success || !parsedData.success) {
-    return { success: false, error: 'Dados invalidos para atualizar o produto.' }
+    return { success: false, error: 'Dados inválidos para atualizar o produto.' }
   }
 
   const { name, price, stock, active } = parsedData.data
@@ -138,7 +138,7 @@ export async function adjustStock(id: string, newStock: number) {
   const parsedId = productIdSchema.safeParse(id)
   const parsedStock = z.number().int().nonnegative().safeParse(newStock)
   if (!parsedId.success || !parsedStock.success) {
-    throw new Error('Dados invalidos para ajuste de estoque.')
+    throw new Error('Dados inválidos para ajuste de estoque.')
   }
 
   await prisma.product.update({
@@ -153,12 +153,12 @@ export async function adjustStock(id: string, newStock: number) {
 export async function deleteProduct(id: string) {
   const session = await getSession()
   if (!session) {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   const parsedId = productIdSchema.safeParse(id)
   if (!parsedId.success) {
-    return { success: false, error: 'Identificador de produto invalido.' }
+    return { success: false, error: 'Identificador de produto inválido.' }
   }
 
   try {

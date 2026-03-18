@@ -25,12 +25,12 @@ const updateEmployeeSchema = z.object({
 export async function createEmployee(data: { name: string; code: string; username: string; password: string; role?: 'ADMIN' | 'EMPLOYEE' }) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   const parsed = createEmployeeSchema.safeParse(data)
   if (!parsed.success) {
-    return { success: false, error: 'Dados invalidos do funcionario.' }
+    return { success: false, error: 'Dados inválidos do funcionário.' }
   }
 
   const { name, code, username, password, role } = parsed.data
@@ -52,17 +52,17 @@ export async function createEmployee(data: { name: string; code: string; usernam
     return { success: true, employee }
   } catch (error: unknown) {
     if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
-      return { success: false, error: 'Usuario ou codigo ja cadastrado.' }
+      return { success: false, error: 'Usuário ou código já cadastrado.' }
     }
 
-    return { success: false, error: 'Erro ao criar funcionario.' }
+    return { success: false, error: 'Erro ao criar funcionário.' }
   }
 }
 
 export async function getEmployees() {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   return prisma.user.findMany({
@@ -83,12 +83,12 @@ export async function getEmployees() {
 export async function toggleEmployeeStatus(id: string, active: boolean) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   const parsedId = employeeIdSchema.safeParse(id)
   if (!parsedId.success) {
-    throw new Error('Identificador invalido')
+    throw new Error('Identificador inválido')
   }
 
   await prisma.user.update({
@@ -107,13 +107,13 @@ export async function updateEmployee(
 ) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   const parsedId = employeeIdSchema.safeParse(id)
   const parsedData = updateEmployeeSchema.safeParse(data)
   if (!parsedId.success || !parsedData.success) {
-    return { success: false, error: 'Dados invalidos para atualizar o funcionario.' }
+    return { success: false, error: 'Dados inválidos para atualizar o funcionário.' }
   }
 
   const { name, code, username, password, role } = parsedData.data
@@ -143,19 +143,19 @@ export async function updateEmployee(
     revalidatePath('/admin/employees')
     return { success: true }
   } catch {
-    return { success: false, error: 'Erro ao atualizar funcionario.' }
+    return { success: false, error: 'Erro ao atualizar funcionário.' }
   }
 }
 
 export async function deleteEmployee(id: string) {
   const session = await getSession()
   if (!session) {
-    throw new Error('Nao autorizado')
+    throw new Error('Não autorizado')
   }
 
   const parsedId = employeeIdSchema.safeParse(id)
   if (!parsedId.success) {
-    return { success: false, error: 'Identificador de funcionario invalido.' }
+    return { success: false, error: 'Identificador de funcionário inválido.' }
   }
 
   try {
@@ -175,6 +175,6 @@ export async function deleteEmployee(id: string) {
     revalidatePath('/admin')
     return { success: true }
   } catch {
-    return { success: false, error: 'Erro ao excluir funcionario.' }
+    return { success: false, error: 'Erro ao excluir funcionário.' }
   }
 }

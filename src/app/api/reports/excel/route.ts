@@ -13,36 +13,38 @@ export async function GET(req: NextRequest) {
 
     const wb = XLSX.utils.book_new()
     const wsStock = XLSX.utils.json_to_sheet(data.stockConsumption.map((item: any) => ({
-      'Produto/Servio': item.name,
+      'Produto/Serviço': item.name,
       'Quantidade': item.qty,
       'Total (R$)': item.total
     })))
     XLSX.utils.book_append_sheet(wb, wsStock, 'Estoque')
     const wsTeam = XLSX.utils.json_to_sheet(data.employeePerformance.map((e: any) => ({
       'Nome': e.name,
-      'Cdigo': e.code,
-      'Lanamentos': e.count,
+      'Código': e.code,
+      'Lançamentos': e.count,
       'Total (R$)': e.total
     })))
     XLSX.utils.book_append_sheet(wb, wsTeam, 'Equipe')
     const wsDetails = XLSX.utils.json_to_sheet(data.entries.map((entry: any) => ({
       'Data/Hora': new Date(entry.createdAt).toLocaleString('pt-BR'),
-      'Funcionrio': entry.user.name,
-      'Cdigo Func.': entry.user.code,
-      'Produto/Servio': entry.productName,
+      'Funcionário': entry.user.name,
+      'Código Func.': entry.user.code,
+      'Produto/Serviço': entry.productName,
       'Qtde': entry.qty,
-      'Preo Unit.': entry.unitPrice,
+      'Preço unit.': entry.unitPrice,
       'Total': entry.total,
-      'Observao': entry.note || ''
+      'Observação': entry.note || ''
     })))
     XLSX.utils.book_append_sheet(wb, wsDetails, 'Detalhes')
 
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+    const timestamp = new Date().getTime()
+    const reportFileName = `Relatório_Xerox_${timestamp}.xlsx`
 
     return new NextResponse(buf, {
       status: 200,
       headers: {
-        'Content-Disposition': `attachment; filename="Relatorio_Xerox_${new Date().getTime()}.xlsx"`,
+        'Content-Disposition': `attachment; filename="Xerox_Report_${timestamp}.xlsx"; filename*=UTF-8''${encodeURIComponent(reportFileName)}`,
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       },
     })
