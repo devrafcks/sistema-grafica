@@ -47,7 +47,7 @@ const MyDocument = ({ data, range }: { data: any, range: string }) => (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Consumo de Estoque</Text>
         <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderCell}>Produto / Serviço</Text>
+          <Text style={styles.tableHeaderCell}>Produto / Estoque</Text>
           <Text style={styles.tableHeaderCellRight}>Quantidade</Text>
           <Text style={styles.tableHeaderCellRight}>Total (R$)</Text>
         </View>
@@ -123,8 +123,9 @@ export async function GET(req: NextRequest) {
         'Content-Type': 'application/pdf',
       },
     })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    console.error('[PDF Report]', error)
+    return NextResponse.json({ error: 'Erro ao gerar relatório PDF.' }, { status: 500 })
   }
 }
 

@@ -141,36 +141,41 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getRecentEntries(limit = 10) {
+export async function getRecentEntries(limit = 10, page = 1) {
   try {
     const session = await getSession()
-    if (!session) return []
+    if (!session) return { entries: [], total: 0 }
 
-    const entries = await prisma.entry.findMany({
-      where: {
-        userId: session.sub
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit,
-      select: {
-        id: true,
-        productName: true,
-        note: true,
-        qty: true,
-        total: true,
-        createdAt: true,
-      }
-    })
+    const skip = (page - 1) * limit
 
-    return entries.map((entry) => ({
-      ...entry,
-      total: Number(entry.total),
-    }))
+    const [entries, total] = await Promise.all([
+      prisma.entry.findMany({
+        where: { userId: session.sub },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+        select: {
+          id: true,
+          productName: true,
+          note: true,
+          qty: true,
+          total: true,
+          createdAt: true,
+        },
+      }),
+      prisma.entry.count({ where: { userId: session.sub } }),
+    ])
+
+    return {
+      entries: entries.map((entry) => ({
+        ...entry,
+        total: Number(entry.total),
+      })),
+      total,
+    }
   } catch (error) {
     console.error('Error fetching recent entries:', error)
-    return []
+    return { entries: [], total: 0 }
   }
 }
 

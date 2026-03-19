@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-background text-foreground h-full w-full">
-      <div className="flex flex-col flex-1 sm:flex-[0.8] lg:flex-1 items-center justify-center p-8 bg-white dark:bg-zinc-950">
+      <div className="flex flex-col flex-1 min-h-screen sm:flex-[0.8] lg:flex-1 items-center justify-center p-8 bg-white dark:bg-zinc-950">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
           <div className="flex flex-col space-y-2 mb-4">
             <div className="flex items-center gap-3 mb-6">
@@ -21,7 +21,7 @@ export default function LoginPage() {
                 <h1 className="text-3xl font-black tracking-tight text-brand-dark">
                   Xerox<span className="text-brand-primary">Manager</span>
                 </h1>
-                <p className="text-xs font-bold text-brand-muted uppercase tracking-[0.2em]">Efficiency & Control</p>
+                <p className="text-xs font-bold text-brand-muted uppercase tracking-[0.2em]">Eficiência & Controle</p>
               </div>
             </div>
 

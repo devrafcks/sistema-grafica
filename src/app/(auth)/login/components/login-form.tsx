@@ -53,7 +53,7 @@ export default function LoginForm() {
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="username" className="text-slate-700 dark:text-slate-300">Username</Label>
+          <Label htmlFor="username" className="text-slate-700 dark:text-slate-300">Usuário</Label>
           <div className="relative">
             <Input
               id="username"

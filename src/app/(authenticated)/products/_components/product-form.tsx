@@ -102,7 +102,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
             ) : (
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-95">
                 <Plus className="mr-2 h-5 w-5" />
-                Novo Produto / Serviço
+                Novo Produto
               </Button>
             )
           }
@@ -137,7 +137,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Nome do produto / serviço</FormLabel>
+                  <FormLabel className="font-bold">Nome do produto</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: Impressão P&B" className="rounded-xl h-11" {...field} />
                   </FormControl>

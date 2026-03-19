@@ -24,8 +24,8 @@ export default async function ProductsPage() {
             <Package className="h-5 w-5" />
             <span className="text-xs font-bold uppercase tracking-widest">Controle de inventário</span>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">Produtos / <span className="text-blue-600">Serviços</span></h1>
-          <p className="text-slate-500 dark:text-zinc-400 mt-1">Gerencie seu catálogo de itens e níveis de estoque.</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">Produtos / <span className="text-blue-600">Estoque</span></h1>
+          <p className="text-slate-500 dark:text-zinc-400 mt-1 text-base md:text-lg">Gerencie seu catálogo de produtos e níveis de estoque.</p>
         </div>
 
         <ProductForm />

@@ -149,7 +149,7 @@ export async function updateEmployee(
 
 export async function deleteEmployee(id: string) {
   const session = await getSession()
-  if (!session) {
+  if (!session || session.role !== 'ADMIN') {
     throw new Error('Não autorizado')
   }
 

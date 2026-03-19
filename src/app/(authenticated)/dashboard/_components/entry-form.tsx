@@ -109,9 +109,9 @@ export function EntryForm() {
       />
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold tracking-tight">Novo serviço</DialogTitle>
+          <DialogTitle className="text-2xl font-bold tracking-tight">Novo lançamento</DialogTitle>
           <DialogDescription>
-            Registre um novo serviço prestado ou uma venda realizada.
+            Registre um novo produto ou venda realizada.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -123,7 +123,7 @@ export function EntryForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold flex justify-between">
-                      Produto ou serviço
+                      Produto / Estoque
                       {searchLoading && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                     </FormLabel>
                     <FormControl>

@@ -3,6 +3,25 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { startOfDay, endOfDay } from 'date-fns'
+import { z } from 'zod'
+
+const MAX_RANGE_DAYS = 366
+
+const reportFiltersSchema = z.object({
+  from: z.date().optional(),
+  to: z.date().optional(),
+  userId: z.union([z.literal('all'), z.string().uuid()]).optional(),
+}).refine(
+  (data) => {
+    if (data.from && data.to && data.from > data.to) return false
+    if (data.from && data.to) {
+      const diffDays = (data.to.getTime() - data.from.getTime()) / (1000 * 60 * 60 * 24)
+      if (diffDays > MAX_RANGE_DAYS) return false
+    }
+    return true
+  },
+  { message: 'Intervalo de datas inválido.' }
+)
 
 export async function getReportData(filters: { from?: Date, to?: Date, userId?: string }) {
   const session = await getSession()
@@ -10,15 +29,20 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     throw new Error('Não autorizado')
   }
 
-  const { from, to, userId } = filters
-  const dateFilter: any = {}
-  
+  const parsed = reportFiltersSchema.safeParse(filters)
+  if (!parsed.success) {
+    throw new Error('Filtros inválidos.')
+  }
+
+  const { from, to, userId } = parsed.data
+  const dateFilter: Partial<{ gte: Date; lte: Date }> = {}
+
   if (from) dateFilter.gte = startOfDay(from)
   if (to) dateFilter.lte = endOfDay(to)
 
-  const where: any = {
+  const where = {
     date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
-    userId: userId !== 'all' ? userId : undefined
+    userId: userId && userId !== 'all' ? userId : undefined,
   }
   const [entries, employeeGroups, stockGroups, totals] = await Promise.all([
     prisma.entry.findMany({

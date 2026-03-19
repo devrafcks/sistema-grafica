@@ -11,7 +11,7 @@ import {
   Search,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -96,13 +96,39 @@ export function ProductTable({ products }: ProductTableProps) {
 
     if (result.success) {
       setProductToDelete(null)
-      toast.success('Item excluído com sucesso!')
+      toast.success('Produto excluído com sucesso!')
       router.refresh()
       return
     }
 
-    toast.error(result.error || 'Erro ao excluir item')
+    toast.error(result.error || 'Erro ao excluir produto')
   }
+
+  const ProductActions = ({ product }: { product: ProductRow }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={
+        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      } />
+      <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
+        <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Gerenciar produto</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => { setEditingProduct(product); setIsFormOpen(true) }}
+          className="rounded-lg h-9 font-medium cursor-pointer"
+        >
+          <Edit2 className="mr-2 h-4 w-4" /> Editar detalhes
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => { setProductToDelete(product); setIsDeleteOpen(true) }}
+          className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
+        >
+          <Trash2 className="mr-2 h-4 w-4" /> Excluir produto
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   return (
     <div className="space-y-4">
@@ -119,10 +145,7 @@ export function ProductTable({ products }: ProductTableProps) {
         />
         {search && (
           <button
-            onClick={() => {
-              setSearch('')
-              setCurrentPage(1)
-            }}
+            onClick={() => { setSearch(''); setCurrentPage(1) }}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
           >
             <X className="h-3 w-3" />
@@ -130,11 +153,80 @@ export function ProductTable({ products }: ProductTableProps) {
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="md:hidden space-y-3">
+        {paginatedProducts.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-10 text-center text-slate-400 italic">
+            {search ? 'Nenhum produto encontrado para esta busca.' : 'Nenhum produto cadastrado no estoque.'}
+          </div>
+        ) : (
+          paginatedProducts.map((product) => {
+            const isLowStock = product.stock <= 5
+            const isActive = product.active !== false
+
+            return (
+              <div
+                key={product.id}
+                className={cn(
+                  'rounded-2xl border bg-white dark:bg-zinc-950 shadow-sm p-4',
+                  isActive ? 'border-slate-200 dark:border-zinc-800' : 'border-slate-200 dark:border-zinc-800 opacity-60',
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 dark:bg-zinc-900 dark:border-zinc-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <Package className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-zinc-100 truncate">{product.name}</p>
+                      {!isActive && (
+                        <span className="text-[10px] text-red-500 font-bold uppercase tracking-tight">Inativo</span>
+                      )}
+                    </div>
+                  </div>
+                  <ProductActions product={product} />
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-zinc-800 grid grid-cols-2 gap-y-2 gap-x-4">
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Código</p>
+                    <Badge variant="outline" className="font-mono font-bold text-[10px] py-0 px-2 bg-slate-50 text-slate-500 mt-0.5">
+                      {product.code}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Preço unitário</p>
+                    <p className="font-bold text-slate-800 dark:text-zinc-200 mt-0.5">
+                      R$ {product.price.toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Estoque</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={cn(
+                        'font-extrabold text-sm',
+                        isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
+                      )}>
+                        {product.stock} unidades
+                      </span>
+                      {isLowStock && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase">
+                          <AlertTriangle className="h-3 w-3" /> Estoque baixo
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <Table>
           <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
             <TableRow>
-              <TableHead className="font-bold py-4">Item</TableHead>
+              <TableHead className="font-bold py-4">Produto / Estoque</TableHead>
               <TableHead className="font-bold">Código</TableHead>
               <TableHead className="font-bold">Preço unitário</TableHead>
               <TableHead className="font-bold">Estoque</TableHead>
@@ -145,7 +237,7 @@ export function ProductTable({ products }: ProductTableProps) {
             {paginatedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
-                  {search ? 'Nenhum item encontrado para esta busca.' : 'Nenhum produto ou serviço cadastrado.'}
+                  {search ? 'Nenhum produto encontrado para esta busca.' : 'Nenhum produto cadastrado no estoque.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -195,37 +287,7 @@ export function ProductTable({ products }: ProductTableProps) {
                       </div>
                     </TableCell>
                     <TableCell className="text-right pr-6">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
-                          <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Gerenciar item</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingProduct(product)
-                              setIsFormOpen(true)
-                            }}
-                            className="rounded-lg h-9 font-medium cursor-pointer"
-                          >
-                            <Edit2 className="mr-2 h-4 w-4" /> Editar detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setProductToDelete(product)
-                              setIsDeleteOpen(true)
-                            }}
-                            className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir item
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ProductActions product={product} />
                     </TableCell>
                   </TableRow>
                 )
@@ -236,9 +298,9 @@ export function ProductTable({ products }: ProductTableProps) {
       </div>
 
       {filteredProducts.length > 0 && totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 py-2">
-          <p className="text-sm text-slate-500 font-medium italic">
-            Mostrando <span className="font-extrabold text-blue-600">{paginatedProducts.length}</span> de <span className="font-extrabold text-slate-900">{filteredProducts.length}</span> produtos
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 py-2">
+          <p className="text-sm text-slate-500 font-medium italic text-center sm:text-left">
+            Mostrando <span className="font-extrabold text-blue-600">{paginatedProducts.length}</span> de <span className="font-extrabold text-slate-900 dark:text-zinc-100">{filteredProducts.length}</span> produtos
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -248,9 +310,10 @@ export function ProductTable({ products }: ProductTableProps) {
               disabled={safePage === 1}
               className="rounded-xl font-bold"
             >
-              <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Anterior</span>
             </Button>
-            <div className="px-4 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-extrabold text-blue-600">
+            <div className="px-3 py-1.5 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl text-sm font-extrabold text-blue-600 min-w-[60px] text-center">
               {safePage} / {totalPages}
             </div>
             <Button
@@ -260,7 +323,8 @@ export function ProductTable({ products }: ProductTableProps) {
               disabled={safePage === totalPages}
               className="rounded-xl font-bold"
             >
-              Próximo <ChevronRight className="h-4 w-4 ml-1" />
+              <span className="hidden sm:inline">Próximo</span>
+              <ChevronRight className="h-4 w-4 sm:ml-1" />
             </Button>
           </div>
         </div>
@@ -271,7 +335,7 @@ export function ProductTable({ products }: ProductTableProps) {
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir item?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza de que deseja excluir <span className="font-bold">&quot;{productToDelete?.name}&quot;</span>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>

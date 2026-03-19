@@ -1,11 +1,11 @@
-﻿import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { getEmployees } from '@/lib/actions/employee.actions'
 import {
   TrendingUp,
   Package,
   DollarSign,
   ArrowUpRight,
-  UserCheck
+  UserCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -118,8 +118,8 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">Painel <span className="text-blue-600">Geral</span></h1>
-        <p className="text-slate-500 dark:text-zinc-400 text-lg">Resumo operacional e financeiro do sistema.</p>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 leading-tight">Painel <span className="text-blue-600">Geral</span></h1>
+        <p className="text-slate-500 dark:text-zinc-400 text-base md:text-lg">Resumo operacional e financeiro do sistema.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -145,11 +145,38 @@ export default async function AdminDashboardPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">Resumo por Funcionário</h2>
           <Button variant="outline" render={<Link href="/admin/reports" />} className="rounded-xl font-bold text-xs uppercase tracking-widest h-9">
-            Ver Relatório Completo <ArrowUpRight className="ml-2 h-3.5 w-3.5" />
+            Ver Relatório <ArrowUpRight className="ml-2 h-3.5 w-3.5" />
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="md:hidden space-y-3">
+          {employeeStats.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-8 text-center text-slate-400 italic">
+              Nenhum funcionário para exibir no momento.
+            </div>
+          ) : (
+            employeeStats.map((employee: { id: string; name: string; code: string; monthlyCount: number; monthlyTotal: number }) => (
+              <div key={employee.id} className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900 dark:text-zinc-100">{employee.name}</p>
+                  <span className="font-extrabold text-blue-600">
+                    R$ {employee.monthlyTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-4">
+                  <span className="text-xs text-slate-500">
+                    Código: <span className="font-bold text-slate-700 dark:text-zinc-300">{employee.code}</span>
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Lançamentos: <span className="font-bold text-slate-700 dark:text-zinc-300">{employee.monthlyCount}</span>
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <Table>
             <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
               <TableRow>
@@ -187,4 +214,3 @@ export default async function AdminDashboardPage() {
     </div>
   )
 }
-

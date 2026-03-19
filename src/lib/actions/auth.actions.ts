@@ -49,24 +49,21 @@ export async function loginAction(formData: FormData) {
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + 7)
 
-  await prisma.$transaction(async (tx) => {
-    await tx.session.deleteMany({
+  await Promise.all([
+    prisma.session.deleteMany({
       where: {
-        OR: [
-          { userId: user.id, expiresAt: { lt: new Date() } },
-          { expiresAt: { lt: new Date() } },
-        ],
+        userId: user.id,
+        expiresAt: { lt: new Date() },
       },
-    })
-
-    await tx.session.create({
+    }),
+    prisma.session.create({
       data: {
         token,
         userId: user.id,
-        expiresAt
-      }
-    })
-  })
+        expiresAt,
+      },
+    }),
+  ])
   const cookieStore = await cookies()
   cookieStore.set({
     name: 'session',

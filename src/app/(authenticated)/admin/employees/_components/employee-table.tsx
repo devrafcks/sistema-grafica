@@ -1,13 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   MoreHorizontal,
   UserX,
   Edit2,
   Shield,
-  User as UserIcon
+  User as UserIcon,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { EmployeeForm } from './employee-form'
@@ -39,6 +43,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { deleteEmployee } from '@/lib/actions/employee.actions'
 import { cn } from '@/lib/utils'
 
@@ -55,13 +60,34 @@ interface EmployeeTableProps {
   employees: EmployeeRow[]
 }
 
+const ITEMS_PER_PAGE = 8
+
 export function EmployeeTable({ employees }: EmployeeTableProps) {
   const router = useRouter()
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [editingEmployee, setEditingEmployee] = useState<EmployeeRow | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredEmployees = useMemo(() => {
+    if (!normalizedSearch) return employees
+    return employees.filter((e) =>
+      e.name.toLowerCase().includes(normalizedSearch) ||
+      e.code.toLowerCase().includes(normalizedSearch) ||
+      e.username.toLowerCase().includes(normalizedSearch)
+    )
+  }, [normalizedSearch, employees])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedEmployees = filteredEmployees.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
+  )
 
   const confirmDelete = async () => {
     if (!employeeToDelete) return
@@ -81,88 +107,206 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
     toast.error(result.error || 'Erro ao excluir funcionário')
   }
 
+  const EmployeeActions = ({ employee }: { employee: EmployeeRow }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={
+        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      } />
+      <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
+        <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Opções</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => { setEditingEmployee(employee); setIsFormOpen(true) }}
+          className="rounded-lg h-9 font-medium cursor-pointer"
+        >
+          <Edit2 className="mr-2 h-4 w-4" /> Editar perfil
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => { setEmployeeToDelete(employee); setIsDeleteOpen(true) }}
+          className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
+        >
+          <UserX className="mr-2 h-4 w-4" /> Excluir funcionário
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <Table>
-        <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
-          <TableRow>
-            <TableHead className="font-bold py-4">Funcionário</TableHead>
-            <TableHead className="font-bold">Código</TableHead>
-            <TableHead className="font-bold">Usuário</TableHead>
-            <TableHead className="font-bold">Cargo</TableHead>
-            <TableHead className="font-bold">Status</TableHead>
-            <TableHead className="text-right font-bold pr-6">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {employees.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-32 text-center text-slate-500">
-                Nenhum funcionário cadastrado.
-              </TableCell>
-            </TableRow>
-          ) : (
-            employees.map((employee) => (
-              <TableRow key={employee.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/30 transition-colors">
-                <TableCell className="py-4">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      'h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm',
-                      employee.role === 'ADMIN' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'
-                    )}>
-                      {employee.role === 'ADMIN' ? (
-                        <Shield className="h-4.5 w-4.5 text-amber-600" />
-                      ) : (
-                        <UserIcon className="h-4.5 w-4.5 text-blue-600" />
-                      )}
-                    </div>
-                    <span className="font-bold text-slate-900 dark:text-zinc-100">{employee.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium text-slate-600 dark:text-zinc-400">{employee.code}</TableCell>
-                <TableCell className="text-slate-500 dark:text-zinc-500">@{employee.username}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={cn(
-                    'font-bold uppercase tracking-widest text-[10px] py-0.5 px-2',
-                    employee.role === 'ADMIN'
-                      ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-500'
-                      : 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+    <div className="space-y-4">
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Input
+          placeholder="Buscar por nome, código ou usuário..."
+          className="pl-10 rounded-xl bg-white border-slate-200"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+        />
+        {search && (
+          <button
+            onClick={() => { setSearch(''); setCurrentPage(1) }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      <div className="md:hidden space-y-3">
+        {paginatedEmployees.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-10 text-center text-slate-400 italic">
+            Nenhum funcionário cadastrado.
+          </div>
+        ) : (
+          paginatedEmployees.map((employee) => (
+            <div
+              key={employee.id}
+              className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-sm p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={cn(
+                    'h-10 w-10 rounded-xl flex items-center justify-center border shadow-sm shrink-0',
+                    employee.role === 'ADMIN' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'
                   )}>
-                    {employee.role === 'ADMIN' ? 'Administrador' : 'Funcionário'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className={cn('h-2 w-2 rounded-full', employee.active ? 'bg-green-500' : 'bg-slate-300')} />
-                    <span className={cn('text-xs font-bold uppercase tracking-tight', employee.active ? 'text-green-600' : 'text-slate-400')}>
-                      {employee.active ? 'Ativo' : 'Inativo'}
-                    </span>
+                    {employee.role === 'ADMIN' ? (
+                      <Shield className="h-5 w-5 text-amber-600" />
+                    ) : (
+                      <UserIcon className="h-5 w-5 text-blue-600" />
+                    )}
                   </div>
-                </TableCell>
-                <TableCell className="text-right pr-6">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    } />
-                    <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
-                      <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Opções</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => { setEditingEmployee(employee); setIsFormOpen(true) }} className="rounded-lg h-9 font-medium cursor-pointer">
-                        <Edit2 className="mr-2 h-4 w-4" /> Editar perfil
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setEmployeeToDelete(employee); setIsDeleteOpen(true) }} className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600">
-                        <UserX className="mr-2 h-4 w-4" /> Excluir funcionário
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-900 dark:text-zinc-100 truncate">{employee.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-zinc-500">@{employee.username}</p>
+                  </div>
+                </div>
+                <EmployeeActions employee={employee} />
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-zinc-800 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-xs text-slate-500 dark:text-zinc-400">
+                  Código: <span className="font-bold text-slate-700 dark:text-zinc-300">{employee.code}</span>
+                </span>
+
+                <Badge variant="outline" className={cn(
+                  'font-bold uppercase tracking-widest text-[10px] py-0.5 px-2',
+                  employee.role === 'ADMIN'
+                    ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-500'
+                    : 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                )}>
+                  {employee.role === 'ADMIN' ? 'Administrador' : 'Funcionário'}
+                </Badge>
+
+                <div className="flex items-center gap-1.5">
+                  <div className={cn('h-2 w-2 rounded-full', employee.active ? 'bg-green-500' : 'bg-slate-300')} />
+                  <span className={cn('text-xs font-bold uppercase tracking-tight', employee.active ? 'text-green-600' : 'text-slate-400')}>
+                    {employee.active ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <Table>
+          <TableHeader className="bg-slate-50/50 dark:bg-zinc-900/50">
+            <TableRow>
+              <TableHead className="font-bold py-4">Funcionário</TableHead>
+              <TableHead className="font-bold">Código</TableHead>
+              <TableHead className="font-bold">Usuário</TableHead>
+              <TableHead className="font-bold">Cargo</TableHead>
+              <TableHead className="font-bold">Status</TableHead>
+              <TableHead className="text-right font-bold pr-6">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedEmployees.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
+                  {search ? 'Nenhum funcionário encontrado para esta busca.' : 'Nenhum funcionário cadastrado.'}
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              paginatedEmployees.map((employee) => (
+                <TableRow key={employee.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        'h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm',
+                        employee.role === 'ADMIN' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'
+                      )}>
+                        {employee.role === 'ADMIN' ? (
+                          <Shield className="h-4 w-4 text-amber-600" />
+                        ) : (
+                          <UserIcon className="h-4 w-4 text-blue-600" />
+                        )}
+                      </div>
+                      <span className="font-bold text-slate-900 dark:text-zinc-100">{employee.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-600 dark:text-zinc-400">{employee.code}</TableCell>
+                  <TableCell className="text-slate-500 dark:text-zinc-500">@{employee.username}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn(
+                      'font-bold uppercase tracking-widest text-[10px] py-0.5 px-2',
+                      employee.role === 'ADMIN'
+                        ? 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-500'
+                        : 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                    )}>
+                      {employee.role === 'ADMIN' ? 'Administrador' : 'Funcionário'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={cn('h-2 w-2 rounded-full', employee.active ? 'bg-green-500' : 'bg-slate-300')} />
+                      <span className={cn('text-xs font-bold uppercase tracking-tight', employee.active ? 'text-green-600' : 'text-slate-400')}>
+                        {employee.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <EmployeeActions employee={employee} />
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {filteredEmployees.length > 0 && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 py-2">
+          <p className="text-sm text-slate-500 font-medium italic">
+            Mostrando <span className="font-extrabold text-blue-600">{paginatedEmployees.length}</span> de <span className="font-extrabold text-slate-900 dark:text-zinc-100">{filteredEmployees.length}</span> funcionários
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="rounded-xl font-bold"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+            </Button>
+            <div className="px-4 py-1.5 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl text-sm font-extrabold text-blue-600">
+              {safePage} / {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="rounded-xl font-bold"
+            >
+              Próximo <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <EmployeeForm employee={editingEmployee ?? undefined} open={isFormOpen} setOpen={setIsFormOpen} trigger={null} />
 

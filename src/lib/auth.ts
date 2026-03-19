@@ -4,7 +4,8 @@ import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 
 const jwtSecret = process.env.JWT_SECRET
-const secret = jwtSecret ? new TextEncoder().encode(jwtSecret) : null
+if (!jwtSecret) throw new Error('JWT_SECRET não configurado nas variáveis de ambiente.')
+const secret = new TextEncoder().encode(jwtSecret)
 
 export interface UserSession {
   sub: string
@@ -14,8 +15,6 @@ export interface UserSession {
 }
 
 export const verifySession = cache(async (token: string): Promise<UserSession | null> => {
-  if (!secret) return null
-
   try {
     await jose.jwtVerify(token, secret)
     const session = await prisma.session.findUnique({
