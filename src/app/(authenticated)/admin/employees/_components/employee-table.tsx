@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Search,
   X,
+  UserCheck,
+  UserMinus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { EmployeeForm } from './employee-form'
@@ -41,10 +43,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { deleteEmployee } from '@/lib/actions/employee.actions'
+import { deleteEmployee, toggleEmployeeStatus } from '@/lib/actions/employee.actions'
 import { cn } from '@/lib/utils'
 
 interface EmployeeRow {
@@ -61,26 +70,41 @@ interface EmployeeTableProps {
 }
 
 const ITEMS_PER_PAGE = 8
+type CargoFilter = 'todos' | 'ADMIN' | 'EMPLOYEE'
+type StatusFilter = 'todos' | 'ativo' | 'inativo'
 
 export function EmployeeTable({ employees }: EmployeeTableProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [cargoFilter, setCargoFilter] = useState<CargoFilter>('todos')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingEmployee, setEditingEmployee] = useState<EmployeeRow | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  const counts = useMemo(() => ({
+    admins: employees.filter((e) => e.role === 'ADMIN').length,
+    funcionarios: employees.filter((e) => e.role === 'EMPLOYEE').length,
+    ativos: employees.filter((e) => e.active).length,
+    inativos: employees.filter((e) => !e.active).length,
+  }), [employees])
 
   const normalizedSearch = search.trim().toLowerCase()
   const filteredEmployees = useMemo(() => {
-    if (!normalizedSearch) return employees
-    return employees.filter((e) =>
-      e.name.toLowerCase().includes(normalizedSearch) ||
-      e.code.toLowerCase().includes(normalizedSearch) ||
-      e.username.toLowerCase().includes(normalizedSearch)
-    )
-  }, [normalizedSearch, employees])
+    return employees.filter((e) => {
+      if (normalizedSearch && !e.name.toLowerCase().includes(normalizedSearch) && !e.code.toLowerCase().includes(normalizedSearch) && !e.username.toLowerCase().includes(normalizedSearch)) {
+        return false
+      }
+      if (cargoFilter !== 'todos' && e.role !== cargoFilter) return false
+      if (statusFilter === 'ativo' && !e.active) return false
+      if (statusFilter === 'inativo' && e.active) return false
+      return true
+    })
+  }, [normalizedSearch, cargoFilter, statusFilter, employees])
 
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE))
   const safePage = Math.min(currentPage, totalPages)
@@ -88,6 +112,33 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   )
+
+  const resetPage = () => setCurrentPage(1)
+  const hasActiveFilters = normalizedSearch || cargoFilter !== 'todos' || statusFilter !== 'todos'
+
+  const clearFilters = () => {
+    setSearch('')
+    setCargoFilter('todos')
+    setStatusFilter('todos')
+    setCurrentPage(1)
+  }
+
+  const handleToggleStatus = async (employee: EmployeeRow) => {
+    setTogglingId(employee.id)
+    try {
+      const result = await toggleEmployeeStatus(employee.id, !employee.active)
+      if (result.success) {
+        toast.success(employee.active ? 'Acesso desativado.' : 'Acesso ativado.')
+        router.refresh()
+      } else {
+        toast.error('Erro ao alterar status do funcionário.')
+      }
+    } catch {
+      toast.error('Erro ao alterar status do funcionário.')
+    } finally {
+      setTogglingId(null)
+    }
+  }
 
   const confirmDelete = async () => {
     if (!employeeToDelete) return
@@ -110,11 +161,11 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
   const EmployeeActions = ({ employee }: { employee: EmployeeRow }) => (
     <DropdownMenu>
       <DropdownMenuTrigger render={
-        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
+        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" disabled={togglingId === employee.id}>
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       } />
-      <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
+      <DropdownMenuContent align="end" className="rounded-xl w-52 p-1.5 shadow-xl">
         <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Opções</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -123,6 +174,21 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
         >
           <Edit2 className="mr-2 h-4 w-4" /> Editar perfil
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleToggleStatus(employee)}
+          className={cn(
+            'rounded-lg h-9 font-medium cursor-pointer',
+            employee.active
+              ? 'text-amber-600 focus:bg-amber-50 focus:text-amber-700'
+              : 'text-green-600 focus:bg-green-50 focus:text-green-700'
+          )}
+        >
+          {employee.active
+            ? <><UserMinus className="mr-2 h-4 w-4" /> Desativar acesso</>
+            : <><UserCheck className="mr-2 h-4 w-4" /> Ativar acesso</>
+          }
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => { setEmployeeToDelete(employee); setIsDeleteOpen(true) }}
           className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
@@ -135,28 +201,82 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Buscar por nome, código ou usuário..."
-          className="pl-10 rounded-xl bg-white border-slate-200"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
-        />
-        {search && (
-          <button
-            onClick={() => { setSearch(''); setCurrentPage(1) }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Buscar por nome, código ou usuário..."
+            className="pl-10 rounded-xl bg-white border-slate-200"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); resetPage() }}
+          />
+          {search && (
+            <button
+              onClick={() => { setSearch(''); resetPage() }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        <Select value={cargoFilter} onValueChange={(v) => { setCargoFilter(v as CargoFilter); resetPage() }}>
+          <SelectTrigger className="w-full sm:w-52 rounded-xl bg-white border-slate-200 font-medium">
+            <SelectValue>
+              {cargoFilter === 'todos' && `Todos os cargos (${employees.length})`}
+              {cargoFilter === 'EMPLOYEE' && `Funcionários (${counts.funcionarios})`}
+              {cargoFilter === 'ADMIN' && `Administradores (${counts.admins})`}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl shadow-xl border-none">
+            <SelectItem value="todos" className="font-medium cursor-pointer">
+              Todos os cargos ({employees.length})
+            </SelectItem>
+            <SelectItem value="EMPLOYEE" className="font-medium cursor-pointer">
+              Funcionários ({counts.funcionarios})
+            </SelectItem>
+            <SelectItem value="ADMIN" className="font-medium cursor-pointer">
+              Administradores ({counts.admins})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as StatusFilter); resetPage() }}>
+          <SelectTrigger className="w-full sm:w-44 rounded-xl bg-white border-slate-200 font-medium">
+            <SelectValue>
+              {statusFilter === 'todos' && 'Ativos e inativos'}
+              {statusFilter === 'ativo' && `Somente ativos (${counts.ativos})`}
+              {statusFilter === 'inativo' && `Somente inativos (${counts.inativos})`}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl shadow-xl border-none">
+            <SelectItem value="todos" className="font-medium cursor-pointer">
+              Ativos e inativos
+            </SelectItem>
+            <SelectItem value="ativo" className="font-medium cursor-pointer">
+              Somente ativos ({counts.ativos})
+            </SelectItem>
+            <SelectItem value="inativo" className="font-medium cursor-pointer">
+              Somente inativos ({counts.inativos})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="outline"
+            onClick={clearFilters}
+            className="rounded-xl border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shrink-0"
           >
-            <X className="h-3 w-3" />
-          </button>
+            <X className="h-4 w-4 mr-1.5" /> Limpar filtros
+          </Button>
         )}
       </div>
 
       <div className="md:hidden space-y-3">
         {paginatedEmployees.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-10 text-center text-slate-400 italic">
-            Nenhum funcionário cadastrado.
+            {hasActiveFilters ? 'Nenhum funcionário encontrado para os filtros aplicados.' : 'Nenhum funcionário cadastrado.'}
           </div>
         ) : (
           paginatedEmployees.map((employee) => (
@@ -226,7 +346,7 @@ export function EmployeeTable({ employees }: EmployeeTableProps) {
             {paginatedEmployees.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center text-slate-500 italic">
-                  {search ? 'Nenhum funcionário encontrado para esta busca.' : 'Nenhum funcionário cadastrado.'}
+                  {hasActiveFilters ? 'Nenhum funcionário encontrado para os filtros aplicados.' : 'Nenhum funcionário cadastrado.'}
                 </TableCell>
               </TableRow>
             ) : (

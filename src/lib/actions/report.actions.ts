@@ -10,7 +10,10 @@ const MAX_RANGE_DAYS = 366
 const reportFiltersSchema = z.object({
   from: z.date().optional(),
   to: z.date().optional(),
-  userId: z.union([z.literal('all'), z.string().uuid()]).optional(),
+  userId: z.union([z.literal('all'), z.string().min(1)]).optional(),
+  productSearch: z.string().max(120).optional(),
+  minAmount: z.coerce.number().nonnegative().optional(),
+  maxAmount: z.coerce.number().nonnegative().optional(),
 }).refine(
   (data) => {
     if (data.from && data.to && data.from > data.to) return false
@@ -18,12 +21,20 @@ const reportFiltersSchema = z.object({
       const diffDays = (data.to.getTime() - data.from.getTime()) / (1000 * 60 * 60 * 24)
       if (diffDays > MAX_RANGE_DAYS) return false
     }
+    if (data.minAmount !== undefined && data.maxAmount !== undefined && data.minAmount > data.maxAmount) return false
     return true
   },
-  { message: 'Intervalo de datas inválido.' }
+  { message: 'Filtros inválidos.' }
 )
 
-export async function getReportData(filters: { from?: Date, to?: Date, userId?: string }) {
+export async function getReportData(filters: {
+  from?: Date
+  to?: Date
+  userId?: string
+  productSearch?: string
+  minAmount?: number
+  maxAmount?: number
+}) {
   const session = await getSession()
   if (!session || session.role !== 'ADMIN') {
     throw new Error('Não autorizado')
@@ -34,7 +45,7 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
     throw new Error('Filtros inválidos.')
   }
 
-  const { from, to, userId } = parsed.data
+  const { from, to, userId, productSearch, minAmount, maxAmount } = parsed.data
   const dateFilter: Partial<{ gte: Date; lte: Date }> = {}
 
   if (from) dateFilter.gte = startOfDay(from)
@@ -43,7 +54,14 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
   const where = {
     date: Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
     userId: userId && userId !== 'all' ? userId : undefined,
+    productName: productSearch && productSearch.trim()
+      ? { contains: productSearch.trim(), mode: 'insensitive' as const }
+      : undefined,
+    total: (minAmount !== undefined || maxAmount !== undefined)
+      ? { gte: minAmount, lte: maxAmount }
+      : undefined,
   }
+
   const [entries, employeeGroups, stockGroups, totals] = await Promise.all([
     prisma.entry.findMany({
       where,
@@ -101,7 +119,6 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
   const employeePerformance = employeeGroups
     .map((group) => {
       const user = userDetails.get(group.userId)
-
       return {
         id: group.userId,
         name: user?.name ?? '',
@@ -110,7 +127,7 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
         total: Number(group._sum.total ?? 0),
       }
     })
-    .sort((left, right) => (firstUserIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (firstUserIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER))
+    .sort((a, b) => (firstUserIndex.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (firstUserIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER))
 
   const stockConsumption = stockGroups
     .map((group) => ({
@@ -118,20 +135,25 @@ export async function getReportData(filters: { from?: Date, to?: Date, userId?: 
       qty: group._sum.qty ?? 0,
       total: Number(group._sum.total ?? 0),
     }))
-    .sort((left, right) => (firstProductIndex.get(left.name) ?? Number.MAX_SAFE_INTEGER) - (firstProductIndex.get(right.name) ?? Number.MAX_SAFE_INTEGER))
+    .sort((a, b) => (firstProductIndex.get(a.name) ?? Number.MAX_SAFE_INTEGER) - (firstProductIndex.get(b.name) ?? Number.MAX_SAFE_INTEGER))
 
   const normalizedEntries = entries.map((entry) => ({
-    ...entry,
+    id: entry.id,
+    userId: entry.userId,
+    productName: entry.productName,
+    qty: entry.qty,
     total: Number(entry.total),
     unitPrice: Number(entry.unitPrice),
+    createdAt: entry.createdAt.toISOString(),
+    note: entry.note ?? null,
+    user: entry.user,
   }))
 
-  return JSON.parse(JSON.stringify({
+  return {
     employeePerformance,
     stockConsumption,
     totalRevenue: Number(totals._sum.total ?? 0),
     totalEntries: totals._count.id,
-    entries: normalizedEntries
-  }))
+    entries: normalizedEntries,
+  }
 }
-

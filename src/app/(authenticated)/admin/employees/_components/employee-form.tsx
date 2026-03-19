@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createEmployee, updateEmployee } from '@/lib/actions/employee.actions'
+import { createEmployee, updateEmployee, toggleEmployeeStatus } from '@/lib/actions/employee.actions'
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -53,7 +53,14 @@ const formSchema = z.object({
 })
 
 interface EmployeeFormProps {
-  employee?: any
+  employee?: {
+    id?: string
+    name?: string
+    username?: string
+    code?: string
+    role?: 'ADMIN' | 'EMPLOYEE'
+    active?: boolean
+  }
   trigger?: React.ReactNode
   open?: boolean
   setOpen?: (open: boolean) => void
@@ -69,6 +76,7 @@ export function EmployeeForm({
   const open = externalOpen !== undefined ? externalOpen : internalOpen
   const setOpen = setExternalOpen !== undefined ? setExternalOpen : setInternalOpen
   const [isLoading, setIsLoading] = useState(false)
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
 
   const form = useForm<any>({
     resolver: zodResolver(formSchema),
@@ -93,6 +101,24 @@ export function EmployeeForm({
       })
     }
   }, [open, employee, form])
+
+  async function handleToggleStatus() {
+    if (!employee?.id) return
+    setIsTogglingStatus(true)
+    try {
+      const result = await toggleEmployeeStatus(employee.id, !employee.active)
+      if (result.success) {
+        toast.success(employee.active ? 'Acesso desativado.' : 'Acesso ativado.')
+        setOpen(false)
+      } else {
+        toast.error('Erro ao alterar status.')
+      }
+    } catch {
+      toast.error('Erro ao alterar status.')
+    } finally {
+      setIsTogglingStatus(false)
+    }
+  }
 
   async function onSubmit(values: any) {
     setIsLoading(true)
@@ -227,6 +253,30 @@ export function EmployeeForm({
                 )}
               />
             </div>
+
+            {employee?.id && (
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-zinc-700 p-3 bg-slate-50 dark:bg-zinc-900">
+                <div>
+                  <p className="text-sm font-bold text-slate-700 dark:text-zinc-200">
+                    Status: <span className={employee.active ? 'text-green-600' : 'text-slate-400'}>{employee.active ? 'Ativo' : 'Inativo'}</span>
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Funcionários inativos não conseguem fazer login.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleToggleStatus}
+                  disabled={isTogglingStatus}
+                  className={
+                    employee.active
+                      ? 'rounded-xl font-bold text-amber-600 border-amber-200 hover:bg-amber-50 hover:border-amber-300'
+                      : 'rounded-xl font-bold text-green-600 border-green-200 hover:bg-green-50 hover:border-green-300'
+                  }
+                >
+                  {isTogglingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : (employee.active ? 'Desativar' : 'Ativar')}
+                </Button>
+              </div>
+            )}
 
             <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl mt-4" disabled={isLoading}>
               {isLoading ? (

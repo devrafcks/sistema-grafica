@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { createProduct, updateProduct } from '@/lib/actions/product.actions'
 
 const formSchema = z.object({
@@ -32,6 +33,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
   price: z.string().refine((value) => !isNaN(Number(value)), 'Preço inválido'),
   stock: z.string().refine((value) => !isNaN(Number(value)), 'Estoque inválido'),
+  active: z.boolean().optional(),
 })
 
 type ProductFormValues = z.infer<typeof formSchema>
@@ -43,6 +45,7 @@ interface ProductFormProps {
     name: string
     price: number
     stock: number
+    active?: boolean
   }
   trigger?: React.ReactNode
   open?: boolean
@@ -63,6 +66,7 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
       name: product?.name || '',
       price: product?.price ? product.price.toString() : '',
       stock: product?.stock?.toString() || '0',
+      active: product?.active ?? true,
     },
   })
 
@@ -74,12 +78,15 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
       name: product?.name || '',
       price: product?.price ? product.price.toString() : '',
       stock: product?.stock?.toString() || '0',
+      active: product?.active ?? true,
     })
   }, [form, open, product])
 
   async function onSubmit(values: ProductFormValues) {
     setIsLoading(true)
-    const result = product?.id ? await updateProduct(product.id, values) : await createProduct(values)
+    const result = product?.id
+      ? await updateProduct(product.id, { name: values.name, price: values.price, stock: values.stock, active: values.active })
+      : await createProduct(values)
     setIsLoading(false)
 
     if (result.success) {
@@ -173,6 +180,33 @@ export function ProductForm({ product, trigger, open: externalOpen, setOpen: set
                 )}
               />
             </div>
+
+            {product?.id && (
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-zinc-700 p-3 bg-slate-50 dark:bg-zinc-900">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div>
+                        <FormLabel className="font-bold cursor-pointer">Produto ativo</FormLabel>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Produtos inativos não aparecem para os funcionários.
+                        </p>
+                      </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl mt-4" disabled={isLoading}>
               {isLoading ? (
                 <>

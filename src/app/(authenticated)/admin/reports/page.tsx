@@ -17,6 +17,7 @@ import {
   TrendingUp,
   DollarSign,
   Activity,
+  X,
 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -46,6 +47,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { getEmployees } from '@/lib/actions/employee.actions'
 import { getReportData } from '@/lib/actions/report.actions'
 
@@ -59,6 +61,9 @@ export default function ReportsPage() {
     to: endOfMonth(new Date()),
   })
   const [selectedUser, setSelectedUser] = useState<string>('all')
+  const [productSearch, setProductSearch] = useState('')
+  const [minAmount, setMinAmount] = useState('')
+  const [maxAmount, setMaxAmount] = useState('')
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
 
   const employeesById = useMemo(
@@ -83,6 +88,9 @@ export default function ReportsPage() {
         from: dateRange.from,
         to: dateRange.to,
         userId: selectedUser,
+        productSearch: productSearch.trim() || undefined,
+        minAmount: minAmount ? Number(minAmount) : undefined,
+        maxAmount: maxAmount ? Number(maxAmount) : undefined,
       })
       setReportData(data)
     } catch (error) {
@@ -91,7 +99,7 @@ export default function ReportsPage() {
       setIsFiltering(false)
       setIsLoading(false)
     }
-  }, [dateRange, selectedUser])
+  }, [dateRange, selectedUser, productSearch, minAmount, maxAmount])
 
   useEffect(() => {
     getEmployees()
@@ -101,13 +109,27 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleExport = (type: 'pdf' | 'excel') => {
     const from = format(dateRange.from, 'yyyy-MM-dd')
     const to = format(dateRange.to, 'yyyy-MM-dd')
-    window.location.href = `/api/reports/${type}?from=${from}&to=${to}&userId=${selectedUser}`
+    const params = new URLSearchParams({ from, to, userId: selectedUser })
+    if (productSearch.trim()) params.set('productSearch', productSearch.trim())
+    if (minAmount) params.set('minAmount', minAmount)
+    if (maxAmount) params.set('maxAmount', maxAmount)
+    window.location.href = `/api/reports/${type}?${params.toString()}`
   }
+
+  const clearFilters = () => {
+    setProductSearch('')
+    setMinAmount('')
+    setMaxAmount('')
+    setSelectedUser('all')
+  }
+
+  const hasActiveFilters = productSearch || minAmount || maxAmount || selectedUser !== 'all'
 
   if (isLoading) {
     return (
@@ -157,7 +179,8 @@ export default function ReportsPage() {
       </div>
 
       <Card className="rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-950">
-        <CardContent className="p-4 md:p-6">
+        <CardContent className="p-4 md:p-6 space-y-4">
+          {/* Row 1: date + employee + apply */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Intervalo de Datas</label>
@@ -221,6 +244,68 @@ export default function ReportsPage() {
               {isFiltering ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
               {isFiltering ? 'Carregando...' : 'Atualizar'}
             </Button>
+          </div>
+
+          {/* Row 2: product search + amount range */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Produto / Serviço</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar produto..."
+                  className="pl-9 rounded-xl h-11 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 font-medium"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                />
+                {productSearch && (
+                  <button
+                    onClick={() => setProductSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Valor mínimo (R$)</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Ex: 10,00"
+                className="rounded-xl h-11 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 font-medium"
+                value={minAmount}
+                onChange={(e) => setMinAmount(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest px-1">Valor máximo (R$)</label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ex: 500,00"
+                  className="rounded-xl h-11 bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-700 font-medium"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                />
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="shrink-0 h-11 rounded-xl text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                    title="Limpar filtros"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

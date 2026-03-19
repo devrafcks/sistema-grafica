@@ -17,8 +17,8 @@ export interface UserSession {
 export const verifySession = cache(async (token: string): Promise<UserSession | null> => {
   try {
     await jose.jwtVerify(token, secret)
-    const session = await prisma.session.findUnique({
-      where: { token },
+    const session = await prisma.session.findFirst({
+      where: { token, expiresAt: { gt: new Date() } },
       select: {
         user: {
           select: {
@@ -29,11 +29,10 @@ export const verifySession = cache(async (token: string): Promise<UserSession | 
             active: true,
           },
         },
-        expiresAt: true,
       },
     })
 
-    if (!session || !session.user.active || session.expiresAt <= new Date()) {
+    if (!session || !session.user.active) {
       return null
     }
 

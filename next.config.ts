@@ -6,8 +6,10 @@ const nextConfig: NextConfig = {
   },
   compress: true,
   poweredByHeader: false,
+  reactStrictMode: true,
+  serverExternalPackages: ['@react-pdf/renderer', 'sharp'],
   experimental: {
-    optimizePackageImports: ['lucide-react', '@base-ui/react'],
+    optimizePackageImports: ['lucide-react', '@base-ui/react', 'date-fns', '@radix-ui/react-select', '@radix-ui/react-dialog', '@radix-ui/react-popover'],
   },
 };
 

@@ -12,6 +12,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -44,8 +46,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ProductForm } from './product-form'
-import { deleteProduct } from '@/lib/actions/product.actions'
+import { deleteProduct, updateProduct } from '@/lib/actions/product.actions'
 
 interface ProductRow {
   id: string
@@ -60,31 +69,75 @@ interface ProductTableProps {
   products: ProductRow[]
 }
 
+type StatusFilter = 'todos' | 'ativo' | 'inativo'
+type StockFilter = 'todos' | 'baixo' | 'zerado'
+
 export function ProductTable({ products }: ProductTableProps) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos')
+  const [stockFilter, setStockFilter] = useState<StockFilter>('todos')
   const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<ProductRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
+  const counts = useMemo(() => ({
+    ativos: products.filter((p) => p.active).length,
+    inativos: products.filter((p) => !p.active).length,
+    estoqueBaixo: products.filter((p) => p.stock > 0 && p.stock <= 5).length,
+    semEstoque: products.filter((p) => p.stock === 0).length,
+  }), [products])
+
   const normalizedSearch = search.trim().toLowerCase()
   const filteredProducts = useMemo(() => {
-    if (!normalizedSearch) return products
-
-    return products.filter((product) =>
-      product.name.toLowerCase().includes(normalizedSearch) ||
-      product.code.toLowerCase().includes(normalizedSearch)
-    )
-  }, [normalizedSearch, products])
+    return products.filter((product) => {
+      if (normalizedSearch && !product.name.toLowerCase().includes(normalizedSearch) && !product.code.toLowerCase().includes(normalizedSearch)) {
+        return false
+      }
+      if (statusFilter === 'ativo' && !product.active) return false
+      if (statusFilter === 'inativo' && product.active) return false
+      if (stockFilter === 'zerado' && product.stock !== 0) return false
+      if (stockFilter === 'baixo' && (product.stock > 5 || product.stock === 0)) return false
+      return true
+    })
+  }, [normalizedSearch, statusFilter, stockFilter, products])
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage))
   const safePage = Math.min(currentPage, totalPages)
   const startIndex = (safePage - 1) * itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage)
+
+  const resetPage = () => setCurrentPage(1)
+  const hasActiveFilters = normalizedSearch || statusFilter !== 'todos' || stockFilter !== 'todos'
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('todos')
+    setStockFilter('todos')
+    setCurrentPage(1)
+  }
+
+  const handleToggleStatus = async (product: ProductRow) => {
+    setTogglingId(product.id)
+    try {
+      const result = await updateProduct(product.id, { name: product.name, active: !product.active })
+      if (result.success) {
+        toast.success(product.active ? 'Produto desativado.' : 'Produto ativado.')
+        router.refresh()
+      } else {
+        toast.error(result.error || 'Erro ao alterar status do produto.')
+      }
+    } catch {
+      toast.error('Erro ao alterar status do produto.')
+    } finally {
+      setTogglingId(null)
+    }
+  }
 
   const confirmDelete = async () => {
     if (!productToDelete) return
@@ -107,11 +160,11 @@ export function ProductTable({ products }: ProductTableProps) {
   const ProductActions = ({ product }: { product: ProductRow }) => (
     <DropdownMenu>
       <DropdownMenuTrigger render={
-        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg">
+        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-lg" disabled={togglingId === product.id}>
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       } />
-      <DropdownMenuContent align="end" className="rounded-xl w-48 p-1.5 shadow-xl">
+      <DropdownMenuContent align="end" className="rounded-xl w-52 p-1.5 shadow-xl">
         <DropdownMenuLabel className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2 py-1.5">Gerenciar produto</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -120,6 +173,21 @@ export function ProductTable({ products }: ProductTableProps) {
         >
           <Edit2 className="mr-2 h-4 w-4" /> Editar detalhes
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleToggleStatus(product)}
+          className={cn(
+            'rounded-lg h-9 font-medium cursor-pointer',
+            product.active
+              ? 'text-amber-600 focus:bg-amber-50 focus:text-amber-700'
+              : 'text-green-600 focus:bg-green-50 focus:text-green-700'
+          )}
+        >
+          {product.active
+            ? <><ToggleLeft className="mr-2 h-4 w-4" /> Desativar produto</>
+            : <><ToggleRight className="mr-2 h-4 w-4" /> Ativar produto</>
+          }
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => { setProductToDelete(product); setIsDeleteOpen(true) }}
           className="rounded-lg h-9 font-medium cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-600"
@@ -132,35 +200,87 @@ export function ProductTable({ products }: ProductTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Buscar por nome ou código..."
-          className="pl-10 rounded-xl bg-white border-slate-200"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setCurrentPage(1)
-          }}
-        />
-        {search && (
-          <button
-            onClick={() => { setSearch(''); setCurrentPage(1) }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Buscar por nome ou código..."
+            className="pl-10 rounded-xl bg-white border-slate-200"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); resetPage() }}
+          />
+          {search && (
+            <button
+              onClick={() => { setSearch(''); resetPage() }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md text-slate-400"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as StatusFilter); resetPage() }}>
+          <SelectTrigger className="w-full sm:w-48 rounded-xl bg-white border-slate-200 font-medium">
+            <SelectValue>
+              {statusFilter === 'todos' && `Todos os produtos (${products.length})`}
+              {statusFilter === 'ativo' && `Ativos (${counts.ativos})`}
+              {statusFilter === 'inativo' && `Inativos (${counts.inativos})`}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl shadow-xl border-none">
+            <SelectItem value="todos" className="font-medium cursor-pointer">
+              Todos os produtos ({products.length})
+            </SelectItem>
+            <SelectItem value="ativo" className="font-medium cursor-pointer">
+              Ativos ({counts.ativos})
+            </SelectItem>
+            <SelectItem value="inativo" className="font-medium cursor-pointer">
+              Inativos ({counts.inativos})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v as StockFilter); resetPage() }}>
+          <SelectTrigger className="w-full sm:w-52 rounded-xl bg-white border-slate-200 font-medium">
+            <SelectValue>
+              {stockFilter === 'todos' && 'Qualquer nível de estoque'}
+              {stockFilter === 'baixo' && `Estoque baixo ≤ 5 (${counts.estoqueBaixo})`}
+              {stockFilter === 'zerado' && `Sem estoque (${counts.semEstoque})`}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl shadow-xl border-none">
+            <SelectItem value="todos" className="font-medium cursor-pointer">
+              Qualquer nível de estoque
+            </SelectItem>
+            <SelectItem value="baixo" className="font-medium cursor-pointer">
+              Estoque baixo ≤ 5 ({counts.estoqueBaixo})
+            </SelectItem>
+            <SelectItem value="zerado" className="font-medium cursor-pointer">
+              Sem estoque ({counts.semEstoque})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {hasActiveFilters && (
+          <Button
+            variant="outline"
+            onClick={clearFilters}
+            className="rounded-xl border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shrink-0"
           >
-            <X className="h-3 w-3" />
-          </button>
+            <X className="h-4 w-4 mr-1.5" /> Limpar filtros
+          </Button>
         )}
       </div>
 
       <div className="md:hidden space-y-3">
         {paginatedProducts.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 p-10 text-center text-slate-400 italic">
-            {search ? 'Nenhum produto encontrado para esta busca.' : 'Nenhum produto cadastrado no estoque.'}
+            {hasActiveFilters ? 'Nenhum produto encontrado para os filtros aplicados.' : 'Nenhum produto cadastrado no estoque.'}
           </div>
         ) : (
           paginatedProducts.map((product) => {
-            const isLowStock = product.stock <= 5
+            const isLowStock = product.stock > 0 && product.stock <= 5
+            const isOutOfStock = product.stock === 0
             const isActive = product.active !== false
 
             return (
@@ -204,11 +324,15 @@ export function ProductTable({ products }: ProductTableProps) {
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={cn(
                         'font-extrabold text-sm',
-                        isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
+                        isOutOfStock ? 'text-red-700' : isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
                       )}>
                         {product.stock} unidades
                       </span>
-                      {isLowStock && (
+                      {isOutOfStock ? (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700 text-[10px] font-bold uppercase">
+                          <AlertTriangle className="h-3 w-3" /> Sem estoque
+                        </div>
+                      ) : isLowStock && (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase">
                           <AlertTriangle className="h-3 w-3" /> Estoque baixo
                         </div>
@@ -237,12 +361,13 @@ export function ProductTable({ products }: ProductTableProps) {
             {paginatedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
-                  {search ? 'Nenhum produto encontrado para esta busca.' : 'Nenhum produto cadastrado no estoque.'}
+                  {hasActiveFilters ? 'Nenhum produto encontrado para os filtros aplicados.' : 'Nenhum produto cadastrado no estoque.'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedProducts.map((product) => {
-                const isLowStock = product.stock <= 5
+                const isLowStock = product.stock > 0 && product.stock <= 5
+                const isOutOfStock = product.stock === 0
                 const isActive = product.active !== false
 
                 return (
@@ -275,11 +400,15 @@ export function ProductTable({ products }: ProductTableProps) {
                       <div className="flex items-center gap-2">
                         <span className={cn(
                           'font-extrabold text-sm',
-                          isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
+                          isOutOfStock ? 'text-red-700' : isLowStock ? 'text-red-600' : 'text-slate-900 dark:text-zinc-100'
                         )}>
                           {product.stock}
                         </span>
-                        {isLowStock && (
+                        {isOutOfStock ? (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700 text-[10px] font-bold uppercase tracking-tight">
+                            <AlertTriangle className="h-3 w-3" /> Sem estoque
+                          </div>
+                        ) : isLowStock && (
                           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold uppercase tracking-tight">
                             <AlertTriangle className="h-3 w-3" /> Estoque baixo
                           </div>
