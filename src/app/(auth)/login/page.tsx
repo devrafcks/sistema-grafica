@@ -31,6 +31,20 @@ export default function LoginPage() {
           </div>
 
           <LoginForm />
+
+          <div className="mt-8 p-4 rounded-xl border border-dashed border-brand-primary/30 bg-brand-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+            <p className="text-xs font-bold text-brand-primary uppercase tracking-wider mb-2">Acesso para Testes:</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Admin</p>
+                <p className="text-sm font-mono text-brand-dark">admin / admin123456</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Funcionário</p>
+                <p className="text-sm font-mono text-brand-dark">teste / 123456</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
