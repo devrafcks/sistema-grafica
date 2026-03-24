@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
@@ -176,6 +176,101 @@ export async function getRecentEntries(limit = 10, page = 1) {
   } catch (error) {
     console.error('Error fetching recent entries:', error)
     return { entries: [], total: 0 }
+  }
+}
+
+export async function getChartData() {
+  try {
+    const session = await getSession()
+    if (!session) return []
+
+    const last7Days = new Date()
+    last7Days.setHours(0, 0, 0, 0)
+    last7Days.setDate(last7Days.getDate() - 6)
+
+    const entries = await prisma.entry.findMany({
+      where: {
+        userId: session.sub,
+        date: { gte: last7Days }
+      },
+      select: {
+        date: true,
+        total: true,
+      },
+      orderBy: { date: 'asc' }
+    })
+
+    const chartDataMap = new Map()
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(last7Days)
+      d.setDate(d.getDate() + i)
+      const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      chartDataMap.set(dateStr, 0)
+    }
+
+    entries.forEach(entry => {
+      const dateStr = new Date(entry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      if (chartDataMap.has(dateStr)) {
+        chartDataMap.set(dateStr, chartDataMap.get(dateStr) + Number(entry.total))
+      }
+    })
+
+    return Array.from(chartDataMap.entries()).map(([name, value]) => ({ name, value }))
+  } catch (error) {
+    console.error('Error fetching chart data:', error)
+    return []
+  }
+}
+
+export async function getAdminChartData() {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'ADMIN') return { revenue: [], topProducts: [] }
+
+    const last15Days = new Date()
+    last15Days.setHours(0, 0, 0, 0)
+    last15Days.setDate(last15Days.getDate() - 14)
+
+    const [revenueEntries, productStats] = await Promise.all([
+      prisma.entry.findMany({
+        where: { date: { gte: last15Days } },
+        select: { date: true, total: true },
+        orderBy: { date: 'asc' }
+      }),
+      prisma.entry.groupBy({
+        by: ['productName'],
+        _sum: { total: true },
+        orderBy: { _sum: { total: 'desc' } },
+        take: 5
+      })
+    ])
+
+    const revenueDataMap = new Map()
+    for (let i = 0; i < 15; i++) {
+        const d = new Date(last15Days)
+        d.setDate(d.getDate() + i)
+        const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+        revenueDataMap.set(dateStr, 0)
+    }
+
+    revenueEntries.forEach(entry => {
+        const dateStr = new Date(entry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+        if (revenueDataMap.has(dateStr)) {
+            revenueDataMap.set(dateStr, revenueDataMap.get(dateStr) + Number(entry.total))
+        }
+    })
+
+    const revenue = Array.from(revenueDataMap.entries()).map(([name, value]) => ({ name, value }))
+
+    const topProducts = productStats.map(stat => ({
+        name: stat.productName,
+        value: Number(stat._sum.total || 0)
+    }))
+
+    return { revenue, topProducts }
+  } catch (error) {
+    console.error('Error fetching admin chart data:', error)
+    return { revenue: [], topProducts: [] }
   }
 }
 

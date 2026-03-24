@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { getEmployees } from '@/lib/actions/employee.actions'
+import { getAdminChartData } from '@/lib/actions/entry.actions'
+import { RevenueLineChart, TopProductsBarChart } from '@/components/dashboard-charts'
 import {
   TrendingUp,
   Package,
   DollarSign,
   ArrowUpRight,
   UserCheck,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -17,6 +20,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import Link from 'next/link'
 
 export default async function AdminDashboardPage() {
@@ -33,6 +37,7 @@ export default async function AdminDashboardPage() {
     totalProducts,
     entriesMonth,
     groupedEmployeeStats,
+    { revenue: chartRevenue, topProducts: chartProducts }
   ] = await Promise.all([
     getEmployees(),
     prisma.entry.aggregate({
@@ -59,7 +64,8 @@ export default async function AdminDashboardPage() {
       },
       _count: { id: true },
       _sum: { total: true }
-    })
+    }),
+    getAdminChartData()
   ])
 
   const employeeStatsMap = new Map(
@@ -139,6 +145,36 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" /> Tendência de Receita
+              </CardTitle>
+              <CardDescription className="text-slate-500 font-medium">Faturamento diário nos últimos 15 dias</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RevenueLineChart data={chartRevenue} />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-slate-200 overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-zinc-50 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" /> Produtos Campeões
+              </CardTitle>
+              <CardDescription className="text-slate-500 font-medium">Top 5 produtos por receita acumulada</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TopProductsBarChart data={chartProducts} />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-4">

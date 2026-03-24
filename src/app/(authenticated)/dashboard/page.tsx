@@ -1,5 +1,7 @@
-import { getDashboardStats, getRecentEntries } from '@/lib/actions/entry.actions'
+import { getDashboardStats, getRecentEntries, getChartData } from '@/lib/actions/entry.actions'
+import { getLowStockProducts } from '@/lib/actions/product.actions'
 import { EntryForm } from './_components/entry-form'
+import { RevenueLineChart } from '@/components/dashboard-charts'
 import {
   TrendingUp,
   DollarSign,
@@ -8,6 +10,8 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  TrendingDown,
+  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -20,6 +24,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -40,9 +46,11 @@ export default async function EmployeeDashboardPage({
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page || '1', 10))
 
-  const [stats, { entries: recentEntries, total: totalEntries }] = await Promise.all([
+  const [stats, { entries: recentEntries, total: totalEntries }, chartData, lowStockProducts] = await Promise.all([
     getDashboardStats(),
     getRecentEntries(ENTRIES_PER_PAGE, page),
+    getChartData(),
+    getLowStockProducts(5),
   ])
 
   const totalPages = Math.max(1, Math.ceil(totalEntries / ENTRIES_PER_PAGE))
@@ -99,6 +107,31 @@ export default async function EmployeeDashboardPage({
           </div>
         ))}
       </div>
+      
+      {lowStockProducts.length > 0 && (
+        <Alert variant="warning" className="rounded-2xl border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/30">
+          <AlertTriangle className="h-5 w-5 text-amber-600" />
+          <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold">Atenção: Estoque Baixo</AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-500 font-medium">
+            Existem {lowStockProducts.length} itens com estoque crítico (≤ 5 unidades). 
+            <Link href="/products" className="ml-1 underline font-bold underline-offset-4">Ver produtos</Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="rounded-2xl border-brand-border overflow-hidden shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-brand-dark dark:text-zinc-50 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-brand-primary" /> Desempenho nos últimos 7 dias
+            </CardTitle>
+            <CardDescription className="text-brand-muted font-medium">Sua produção diária em reais (R$)</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 sm:px-6">
+          <RevenueLineChart data={chartData} />
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -210,15 +243,9 @@ export default async function EmployeeDashboardPage({
                 size="sm"
                 className="rounded-xl font-bold"
                 disabled={safePage === 1}
-                asChild={safePage > 1}
+                render={safePage > 1 ? <Link href={`/dashboard?page=${safePage - 1}`} /> : undefined}
               >
-                {safePage > 1 ? (
-                  <Link href={`/dashboard?page=${safePage - 1}`}>
-                    <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
-                  </Link>
-                ) : (
-                  <span><ChevronLeft className="h-4 w-4 mr-1 inline" /> Anterior</span>
-                )}
+                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
               </Button>
 
               <div className="px-4 py-1.5 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl text-sm font-extrabold text-blue-600">
@@ -230,15 +257,9 @@ export default async function EmployeeDashboardPage({
                 size="sm"
                 className="rounded-xl font-bold"
                 disabled={safePage === totalPages}
-                asChild={safePage < totalPages}
+                render={safePage < totalPages ? <Link href={`/dashboard?page=${safePage + 1}`} /> : undefined}
               >
-                {safePage < totalPages ? (
-                  <Link href={`/dashboard?page=${safePage + 1}`}>
-                    Próximo <ChevronRight className="h-4 w-4 ml-1" />
-                  </Link>
-                ) : (
-                  <span>Próximo <ChevronRight className="h-4 w-4 ml-1 inline" /></span>
-                )}
+                Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           </div>

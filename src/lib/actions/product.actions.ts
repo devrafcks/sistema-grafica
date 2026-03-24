@@ -178,3 +178,28 @@ export async function deleteProduct(id: string) {
     return { success: false, error: 'Erro ao excluir produto.' }
   }
 }
+
+export async function getLowStockProducts(threshold = 5) {
+  try {
+    const session = await getSession()
+    if (!session) return []
+
+    const products = await prisma.product.findMany({
+      where: {
+        active: true,
+        stock: { lte: threshold }
+      },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+      },
+      orderBy: { stock: 'asc' }
+    })
+
+    return products
+  } catch (error) {
+    console.error('Error fetching low stock products:', error)
+    return []
+  }
+}
