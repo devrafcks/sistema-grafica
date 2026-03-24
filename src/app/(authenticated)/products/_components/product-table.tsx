@@ -14,7 +14,9 @@ import {
   ChevronRight,
   ToggleLeft,
   ToggleRight,
+  FileDown,
 } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import {
@@ -120,6 +122,28 @@ export function ProductTable({ products }: ProductTableProps) {
     setStatusFilter('todos')
     setStockFilter('todos')
     setCurrentPage(1)
+  }
+
+  const handleExport = () => {
+    try {
+      const dataToExport = filteredProducts.map(p => ({
+        'Código': p.code,
+        'Produto': p.name,
+        'Preço (R$)': p.price,
+        'Estoque': p.stock,
+        'Status': p.active ? 'Ativo' : 'Inativo'
+      }))
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Produtos')
+      
+      XLSX.writeFile(workbook, `estoque-produtos-${new Date().toISOString().split('T')[0]}.xlsx`)
+      toast.success('Exportação concluída com sucesso!')
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao exportar dados.')
+    }
   }
 
   const handleToggleStatus = async (product: ProductRow) => {
@@ -270,6 +294,14 @@ export function ProductTable({ products }: ProductTableProps) {
             <X className="h-4 w-4 mr-1.5" /> Limpar filtros
           </Button>
         )}
+
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          className="rounded-xl border-slate-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors shrink-0 ml-auto"
+        >
+          <FileDown className="h-4 w-4 mr-1.5" /> Exportar (Excel)
+        </Button>
       </div>
 
       <div className="md:hidden space-y-3">
